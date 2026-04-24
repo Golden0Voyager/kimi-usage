@@ -52,12 +52,12 @@ export function deactivate() {
 
 async function refresh() {
   const cfg = vscode.workspace.getConfiguration('kimiUsage');
-  const apiKey = cfg.get<string>('apiKey', '') || process.env.KIMI_API_KEY || '';
+  const apiKey = cfg.get<string>('apiKey', '') || process.env.KIMI_CODING_API_KEY || '';
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
     statusBarItem.text = '$(warning) Kimi: no key';
-    statusBarItem.tooltip = 'Set kimiUsage.apiKey in VS Code settings or KIMI_API_KEY env var';
+    statusBarItem.tooltip = 'Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var';
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     return;
   }
@@ -251,7 +251,7 @@ function shortLabel(label: string): string {
 
 async function showDetails() {
   const cfg = vscode.workspace.getConfiguration('kimiUsage');
-  const apiKey = cfg.get<string>('apiKey', '') || process.env.KIMI_API_KEY || '';
+  const apiKey = cfg.get<string>('apiKey', '') || process.env.KIMI_CODING_API_KEY || '';
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {

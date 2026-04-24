@@ -12,11 +12,7 @@
 
 ## 前提条件
 
-你需要一个 **Kimi Coding Plan** 的 API Key。获取方式：
-
-1. 打开 [Kimi Coding Plan](https://kimi.com/coding) 页面
-2. 登录后按 `Cmd/Ctrl + Shift + P` → 输入 **"API Key"**
-3. 复制生成的 Key
+你需要一个 **Kimi Coding Plan** 的 API Key。在 Kimi 客户端或网页版中进入 Coding 模式，前往账户/设置页面创建或复制已创建的 API Key，然后粘贴到 `.env` 或环境变量中。
 
 ---
 
@@ -25,14 +21,14 @@
 所有组件共用同一个环境变量：
 
 ```bash
-export KIMI_API_KEY="你的_API_Key"
+export KIMI_CODING_API_KEY="你的_API_Key"
 ```
 
 或者创建 `.env` 文件：
 
 ```bash
 cp .env.example .env
-# 编辑 .env 填入 KIMI_API_KEY
+# 编辑 .env 填入 KIMI_CODING_API_KEY
 ```
 
 可选：修改 API Base URL（通常不需要）
@@ -56,7 +52,7 @@ pip install -r requirements.txt
 ### 运行
 
 ```bash
-# 需要 KIMI_API_KEY 环境变量已设置
+# 需要 KIMI_CODING_API_KEY 环境变量已设置
 python kimi_usage.py
 ```
 
@@ -96,7 +92,7 @@ python kimi_usage.py --json    # JSON
     args:
       - /absolute/path/to/kimi_usage_mcp.py
     env:
-      KIMI_API_KEY: "你的_API_Key"
+      KIMI_CODING_API_KEY: "你的_API_Key"
       PYTHONPATH: /absolute/path/to/kimi_usage
       PWD: /absolute/path/to/kimi_usage
 ```
@@ -114,7 +110,7 @@ python kimi_usage.py --json    # JSON
       "command": "python3",
       "args": ["/absolute/path/to/kimi_usage_mcp.py"],
       "env": {
-        "KIMI_API_KEY": "你的_API_Key",
+        "KIMI_CODING_API_KEY": "你的_API_Key",
         "PYTHONPATH": "/absolute/path/to/kimi_usage",
         "PWD": "/absolute/path/to/kimi_usage"
       }
@@ -134,7 +130,7 @@ python kimi_usage.py --json    # JSON
       "command": "python3",
       "args": ["/absolute/path/to/kimi_usage_mcp.py"],
       "env": {
-        "KIMI_API_KEY": "你的_API_Key",
+        "KIMI_CODING_API_KEY": "你的_API_Key",
         "PYTHONPATH": "/absolute/path/to/kimi_usage",
         "PWD": "/absolute/path/to/kimi_usage"
       }
@@ -171,7 +167,7 @@ VSCode Settings 中搜索 `kimiUsage`，配置以下选项：
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| `kimiUsage.apiKey` | Kimi API Key（或留空读取 `KIMI_API_KEY` 环境变量） | `""` |
+| `kimiUsage.apiKey` | Kimi API Key（或留空读取 `KIMI_CODING_API_KEY` 环境变量） | `""` |
 | `kimiUsage.baseUrl` | API Base URL | `https://api.kimi.com/coding/v1` |
 | `kimiUsage.refreshIntervalMinutes` | 自动刷新间隔（分钟） | `5` |
 | `kimiUsage.warnPercent` | 黄色警告阈值（剩余百分比） | `30` |
@@ -190,7 +186,7 @@ VSCode Settings 中搜索 `kimiUsage`，配置以下选项：
 
 | 变量名 | 必填 | 说明 |
 |--------|------|------|
-| `KIMI_API_KEY` | ✅ | Kimi Coding Plan API Key |
+| `KIMI_CODING_API_KEY` | ✅ | Kimi Coding Plan API Key |
 | `KIMI_BASE_URL` | ❌ | API 基础地址，默认 `https://api.kimi.com/coding/v1` |
 
 ---

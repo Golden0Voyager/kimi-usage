@@ -241,14 +241,14 @@ async def fetch_usage(base_url: str, api_key: str) -> Mapping[str, Any]:
 
 async def async_main() -> None:
     parser = argparse.ArgumentParser(description="Kimi API Usage Reporter")
-    parser.add_argument("--api-key", default=os.getenv("KIMI_API_KEY"), help="API key (or KIMI_API_KEY env)")
+    parser.add_argument("--api-key", default=os.getenv("KIMI_CODING_API_KEY"), help="API key (or KIMI_CODING_API_KEY env)")
     parser.add_argument("--base-url", default=os.getenv("KIMI_BASE_URL", DEFAULT_BASE_URL), help=f"Base URL (default: {DEFAULT_BASE_URL})")
     parser.add_argument("--json", action="store_true", help="JSON output")
     parser.add_argument("--plain", action="store_true", help="Plain text output")
     args = parser.parse_args()
 
     if not args.api_key:
-        print("Error: API key required. Set KIMI_API_KEY in .env or use --api-key.", file=sys.stderr)
+        print("Error: API key required. Set KIMI_CODING_API_KEY in .env or use --api-key.", file=sys.stderr)
         sys.exit(1)
 
     try:

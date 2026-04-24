@@ -21,11 +21,11 @@ import kimi_usage
 
 
 def _resolve_config():
-    api_key = os.getenv("KIMI_API_KEY")
+    api_key = os.getenv("KIMI_CODING_API_KEY")
     base_url = os.getenv("KIMI_BASE_URL", kimi_usage.DEFAULT_BASE_URL)
     if not api_key:
         raise RuntimeError(
-            "KIMI_API_KEY not set. Add it to .env or export it before starting the MCP server."
+            "KIMI_CODING_API_KEY not set. Add it to .env or export it before starting the MCP server."
         )
     return base_url, api_key
 
