@@ -1,0 +1,4 @@
+aiohttp
+rich
+python-dotenv
+mcp

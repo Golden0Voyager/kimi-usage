@@ -1,0 +1,68 @@
+{
+  "name": "kimi-usage",
+  "displayName": "Kimi Usage",
+  "description": "Show Kimi API usage in the status bar",
+  "icon": "assets/icon.png",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Kimi Usage",
+      "properties": {
+        "kimiUsage.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Kimi API key. If empty, reads from KIMI_API_KEY env var."
+        },
+        "kimiUsage.baseUrl": {
+          "type": "string",
+          "default": "https://api.kimi.com/coding/v1",
+          "description": "Kimi API base URL"
+        },
+        "kimiUsage.refreshIntervalMinutes": {
+          "type": "number",
+          "default": 5,
+          "description": "Status bar refresh interval in minutes"
+        },
+        "kimiUsage.warnPercent": {
+          "type": "number",
+          "default": 30,
+          "description": "Percentage threshold to show yellow warning"
+        },
+        "kimiUsage.criticalPercent": {
+          "type": "number",
+          "default": 10,
+          "description": "Percentage threshold to show red alert"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "kimiUsage.refresh",
+        "title": "Refresh Kimi Usage",
+        "category": "Kimi"
+      },
+      {
+        "command": "kimiUsage.showDetails",
+        "title": "Show Kimi Usage Details",
+        "category": "Kimi"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
+  }
+}
