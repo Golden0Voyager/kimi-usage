@@ -14,25 +14,26 @@ from rich.console import Console
 
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
-mcp = FastMCP("kimi_usage")
+mcp = FastMCP("kimi-code-usage")
 
 # Initial import so the module is in sys.modules
 import kimi_usage
 
 
 def _resolve_config():
-    api_key = os.getenv("KIMI_CODING_API_KEY")
+    # Support both naming conventions for better compatibility
+    api_key = os.getenv("KIMI_API_KEY") or os.getenv("KIMI_CODING_API_KEY")
     base_url = os.getenv("KIMI_BASE_URL", kimi_usage.DEFAULT_BASE_URL)
     if not api_key:
         raise RuntimeError(
-            "KIMI_CODING_API_KEY not set. Add it to .env or export it before starting the MCP server."
+            "KIMI_API_KEY not set. Add it to .env or export it before starting the MCP server."
         )
     return base_url, api_key
 
 
 @mcp.tool()
 async def get_kimi_usage() -> str:
-    """Fetch current Kimi API usage and quota information."""
+    """Fetch current Kimi API usage and quota information with curated aesthetic precision."""
     # Reload module on every call so code changes take effect without restarting
     importlib.reload(kimi_usage)
 

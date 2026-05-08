@@ -27,6 +27,34 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 DEFAULT_BASE_URL = "https://api.kimi.com/coding/v1"
 
+# i18n Support
+STRINGS = {
+    "en": {
+        "title": "Kimi Code Usage",
+        "remaining": "remaining",
+        "countdown": "Countdown",
+        "reset": "Reset",
+        "no_data": "No usage data",
+        "weekly_limit": "Weekly limit",
+        "limit_fallback": "Limit",
+    },
+    "zh": {
+        "title": "Kimi Code 用量监控",
+        "remaining": "剩余",
+        "countdown": "重置倒计时",
+        "reset": "重置时间",
+        "no_data": "暂无用量数据",
+        "weekly_limit": "周用量限额",
+        "limit_fallback": "限额",
+    }
+}
+
+def get_lang():
+    lang = os.getenv("LANG", "en").lower()
+    return "zh" if "zh" in lang or "cn" in lang else "en"
+
+L = STRINGS[get_lang()]
+
 
 @dataclass(slots=True, frozen=True)
 class UsageRow:
@@ -96,13 +124,13 @@ def _limit_label(item, detail, window, idx) -> str:
     time_unit = window.get("timeUnit") or item.get("timeUnit") or detail.get("timeUnit") or ""
     if duration:
         if "MINUTE" in time_unit:
-            return f"{duration // 60}h limit" if duration >= 60 and duration % 60 == 0 else f"{duration}m limit"
+            return f"{duration // 60}h {L['limit_fallback']}" if duration >= 60 and duration % 60 == 0 else f"{duration}m {L['limit_fallback']}"
         if "HOUR" in time_unit:
-            return f"{duration}h limit"
+            return f"{duration}h {L['limit_fallback']}"
         if "DAY" in time_unit:
-            return f"{duration}d limit"
-        return f"{duration}s limit"
-    return f"Limit #{idx + 1}"
+            return f"{duration}d {L['limit_fallback']}"
+        return f"{duration}s {L['limit_fallback']}"
+    return f"{L['limit_fallback']} #{idx + 1}"
 
 
 def _to_usage_row(data, *, default_label) -> UsageRow | None:
@@ -129,7 +157,7 @@ def _parse_usage_payload(payload):
     limits = []
     usage = payload.get("usage")
     if isinstance(usage, Mapping):
-        summary = _to_usage_row(cast(Mapping, usage), default_label="Weekly limit")
+        summary = _to_usage_row(cast(Mapping, usage), default_label=L["weekly_limit"])
     raw_limits = payload.get("limits")
     if isinstance(raw_limits, Sequence):
         for idx, item in enumerate(raw_limits):
@@ -159,7 +187,7 @@ def _format_rows(rows: list[UsageRow]) -> Text:
     result = Text()
     for i, row in enumerate(rows):
         used_ratio = row.used / row.limit if row.limit > 0 else 0
-        remaining = row.limit - row.used
+        remaining_percent = 100 - (used_ratio * 100)
         color = _ratio_color(used_ratio)
         filled = int(used_ratio * bar_width)
 
@@ -170,14 +198,14 @@ def _format_rows(rows: list[UsageRow]) -> Text:
         result.append(f"{row.label:<{label_width}}  ", style="cyan")
         result.append("█" * filled, style=color)
         result.append("░" * (bar_width - filled))
-        result.append(f"  {used_ratio * 100:.0f}%   {remaining}% remaining", style="bold")
+        result.append(f"  {used_ratio * 100:.0f}%   {remaining_percent:.0f}% {L['remaining']}", style="bold")
 
         # Line 2: countdown + reset, aligned with label (no indent)
         meta_parts: list[str] = []
         if row.countdown:
-            meta_parts.append(f"Countdown: {row.countdown}")
+            meta_parts.append(f"{L['countdown']}: {row.countdown}")
         if row.reset_at:
-            meta_parts.append(f"Reset: {row.reset_at}")
+            meta_parts.append(f"{L['reset']}: {row.reset_at}")
         if meta_parts:
             result.append("\n")
             result.append("  ".join(meta_parts), style="dim cyan")
@@ -188,12 +216,12 @@ def _format_rows(rows: list[UsageRow]) -> Text:
 def _build_usage_panel(summary, limits) -> Panel:
     rows = ([summary] if summary else []) + limits
     if not rows:
-        return Panel(Text("No usage data", style="grey50"), border_style="wheat4", padding=(0, 2))
+        return Panel(Text(L["no_data"], style="grey50"), border_style="bright_black", padding=(0, 2))
     return Panel(
         _format_rows(rows),
-        title=Text("Kimi Code Usage", style="bold cyan"),
+        title=Text(L["title"], style="bold cyan"),
         title_align="left",
-        border_style="wheat4",
+        border_style="bright_black",
         padding=(1, 2, 0, 2),
         expand=False,
     )

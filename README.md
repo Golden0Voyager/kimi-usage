@@ -1,138 +1,78 @@
-# Kimi Usage
+<p align="center">
+  <img src="vscode-extension/assets/banner.png" width="100%" alt="Kimi Code Usage Banner">
+</p>
 
-查询 Kimi (Moonshot AI) Coding Plan API 用量配额的多端工具集：CLI + MCP Server + VSCode Extension。
+# Kimi Code Usage: The Curated Toolchain
 
-## 功能
-
-- **CLI** — 终端运行，Rich 彩色进度条面板显示当前用量、剩余百分比、重置倒计时
-- **MCP Server** — 供 Hermes / Claude Code / Cursor 等 AI Agent 调用，一键查看配额
-- **VSCode Extension** — 状态栏实时显示剩余百分比，超限变色预警，hover 查看详情
-
----
-
-## 前提条件
-
-你需要一个 **Kimi Coding Plan** 的 API Key。在 Kimi 客户端或网页版中进入 Coding 模式，前往账户/设置页面创建或复制已创建的 API Key，然后粘贴到 `.env` 或环境变量中。
+**Manifesting your AI quota with aesthetic precision across CLI, MCP, and VS Code.**
+**以优雅的姿态，在终端、AI 助手与编辑器中感知你的 AI 额度。**
 
 ---
 
-## 全局配置
+### 🌟 Project Vision | 项目愿景
 
-所有组件共用同一个环境变量：
+In the era of "Vibecoding," transparency of resources is a prerequisite for flow. **Kimi Code Usage** is a meticulously crafted toolchain designed to bridge the gap between technical data and intuitive curation.
 
-```bash
-export KIMI_CODING_API_KEY="你的_API_Key"
-```
-
-或者创建 `.env` 文件：
-
-```bash
-cp .env.example .env
-# 编辑 .env 填入 KIMI_CODING_API_KEY
-```
-
-可选：修改 API Base URL（通常不需要）
-
-```bash
-export KIMI_BASE_URL="https://api.kimi.com/coding/v1"
-```
+在“直觉编程”时代，资源的透明度是进入心流状态的前提。**Kimi Code Usage** 是一套精心打磨的工具链，旨在技术数据与审美策展之间建立桥梁。
 
 ---
 
-## 1. CLI 使用
+### 📦 Components | 组件矩阵
 
-### 安装依赖
+1.  **💎 VS Code Extension** ([Go to Marketplace](https://marketplace.visualstudio.com/items?itemName=HainingYu.kimi-code-usage))
+    A sleek indicator in your status bar with sensory alerting.
+    极致简洁的状态栏百分比显示与视觉化预警。
+2.  **🔍 MCP Server (Model Context Protocol)**
+    Exposes `get_kimi_usage` to AI Agents (Claude Code, Cursor, Windsurf).
+    供 AI 智能体调用的标准化能力接口。
+3.  **⚡ CLI Reporter**
+    Terminal-based Rich panel for instant insights.
+    基于终端的彩色面板，快速洞察配额细节。
+
+---
+
+### 🛠️ Prerequisites | 前提条件
+
+- **Kimi Coding Plan** API Key (from [Kimi Coding v1](https://api.kimi.com/coding/v1))
+- Python 3.10+ (for MCP & CLI)
+- VS Code (for Extension)
+
+---
+
+### ⚙️ Global Configuration | 全局配置
+
+All components respect the following environment variables (or `.env` file):
+所有组件均遵循以下环境变量（或 `.env` 文件）：
+
+| Variable (变量名) | Required | Description (说明) |
+| :--- | :---: | :--- |
+| `KIMI_API_KEY` | ✅ | Your Kimi API secret / API 密钥 |
+| `KIMI_BASE_URL` | ❌ | API base URL / 接口地址 |
 
 ```bash
-git clone https://github.com/Golden0Voyager/kimi-usage.git
-cd kimi-usage
-pip install -r requirements.txt
-```
-
-### 运行
-
-```bash
-# 需要 KIMI_CODING_API_KEY 环境变量已设置
-python kimi_usage.py
-```
-
-输出示例：
-
-```
-╭─ Kimi Code Usage ──────────────────────────────────╮
-│                                                     │
-│  Weekly limit   ████████░░░░░░░░░░░░  48%  52% remaining
-│  Countdown: 4d 3h 36m  Reset: 04-28 15:57          │
-│                                                     │
-│  5h limit       ░░░░░░░░░░░░░░░░░░░░  0%   100% remaining
-│  Countdown: 1h 36m  Reset: 04-24 13:57              │
-╰─────────────────────────────────────────────────────╯
-```
-
-### 其他输出格式
-
-```bash
-python kimi_usage.py --plain   # 纯文本
-python kimi_usage.py --json    # JSON
+# Example .env setup
+KIMI_API_KEY="your_api_key_here"
 ```
 
 ---
 
-## 2. MCP Server 配置
+### 🧩 MCP Server Setup | AI 智能体配置
 
-供支持 MCP（Model Context Protocol）的 AI Agent 调用，如 **Hermes、Claude Code、Cursor**。
+Compatible with **Claude Code, Cursor, and Windsurf**.
+兼容所有支持 MCP 协议的 AI 助手。
 
-### Hermes
-
-在 `~/.hermes/config.yaml` 的 `mcp_servers:` 下添加：
-
-```yaml
-  kimi_usage:
-    command: python3
-    args:
-      - /absolute/path/to/kimi_usage_mcp.py
-    env:
-      KIMI_CODING_API_KEY: "你的_API_Key"
-      PYTHONPATH: /absolute/path/to/kimi_usage
-      PWD: /absolute/path/to/kimi_usage
-```
-
-重启 Hermes 后，输入 **"kimi 用量"** 即可调用。
-
-### Claude Code
-
-在 `~/.claude/settings.json` 中添加 MCP server：
+#### Configuration Snippet
+Add this to your MCP configuration file (e.g., `~/.claude/settings.json`):
 
 ```json
 {
   "mcpServers": {
-    "kimi_usage": {
+    "kimi-code-usage": {
       "command": "python3",
       "args": ["/absolute/path/to/kimi_usage_mcp.py"],
       "env": {
-        "KIMI_CODING_API_KEY": "你的_API_Key",
-        "PYTHONPATH": "/absolute/path/to/kimi_usage",
-        "PWD": "/absolute/path/to/kimi_usage"
-      }
-    }
-  }
-}
-```
-
-### Cursor
-
-打开 Cursor Settings → MCP，添加：
-
-```json
-{
-  "mcpServers": {
-    "kimi_usage": {
-      "command": "python3",
-      "args": ["/absolute/path/to/kimi_usage_mcp.py"],
-      "env": {
-        "KIMI_CODING_API_KEY": "你的_API_Key",
-        "PYTHONPATH": "/absolute/path/to/kimi_usage",
-        "PWD": "/absolute/path/to/kimi_usage"
+        "KIMI_API_KEY": "YOUR_KEY",
+        "PYTHONPATH": "/absolute/path/to/kimi_usage"
       }
     }
   }
@@ -141,56 +81,14 @@ python kimi_usage.py --json    # JSON
 
 ---
 
-## 3. VSCode 插件安装
+### 🎨 About the Curator | 关于策展人
 
-### 方式一：从 Release 下载（推荐）
+Crafted with ❤️ by **Haining Yu**, an Art Curator and Vibecoder. This toolchain is part of a curated collection designed to bridge the gap between aesthetic curation and intuitive, AI-powered coding.
 
-1. 打开 [Releases 页面](https://github.com/Golden0Voyager/kimi-usage/releases)
-2. 下载最新的 `kimi-usage-x.x.x.vsix` 文件
-3. VSCode 中按 `Cmd+Shift+P` → **Extensions: Install from VSIX...**
-4. 选择下载的 `.vsix` 文件
-5. `Cmd+Shift+P` → **Developer: Reload Window**
-
-### 方式二：从源码编译
-
-```bash
-cd kimi-usage/vscode-extension
-npm install
-npm run compile
-vsce package          # 需要 npm install -g @vscode/vsce
-code --install-extension kimi-usage-0.1.0.vsix
-```
-
-### 配置
-
-VSCode Settings 中搜索 `kimiUsage`，配置以下选项：
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `kimiUsage.apiKey` | Kimi API Key（或留空读取 `KIMI_CODING_API_KEY` 环境变量） | `""` |
-| `kimiUsage.baseUrl` | API Base URL | `https://api.kimi.com/coding/v1` |
-| `kimiUsage.refreshIntervalMinutes` | 自动刷新间隔（分钟） | `5` |
-| `kimiUsage.warnPercent` | 黄色警告阈值（剩余百分比） | `30` |
-| `kimiUsage.criticalPercent` | 红色告警阈值（剩余百分比） | `10` |
-
-### 使用
-
-- **状态栏** — 右下角显示 `$(chip) Kimi W:52% 5H:100%`，颜色随余量变化
-- **Hover** — 鼠标悬停查看详细用量和重置时间
-- **命令面板** — `Cmd+Shift+P` → `Kimi: Refresh Usage` 手动刷新
-- **详情面板** — `Cmd+Shift+P` → `Kimi: Show Usage Details` 查看完整列表
+由 **Haining Yu** 精心打磨。作为一名艺术策展人与 Vibecoder，我将代码视作展览，力求在审美策展与直觉化 AI 编程之间寻找完美的平衡。
 
 ---
 
-## 环境变量汇总
-
-| 变量名 | 必填 | 说明 |
-|--------|------|------|
-| `KIMI_CODING_API_KEY` | ✅ | Kimi Coding Plan API Key |
-| `KIMI_BASE_URL` | ❌ | API 基础地址，默认 `https://api.kimi.com/coding/v1` |
-
----
-
-## License
-
-MIT
+<p align="center">
+  <strong>Enjoy the flow. Stay in the vibe.</strong>
+</p>
