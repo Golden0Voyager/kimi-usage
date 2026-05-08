@@ -1,9 +1,20 @@
 {
-  "name": "kimi-usage",
-  "displayName": "Kimi Usage",
-  "description": "Show Kimi API usage in the status bar",
+  "name": "kimi-code-usage",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
   "icon": "assets/icon.png",
+  "publisher": "HainingYu",
+  "author": "Haining Yu",
+  "license": "MIT",
   "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Golden0Voyager/kimi_usage"
+  },
+  "homepage": "https://github.com/Golden0Voyager/kimi_usage#readme",
+  "bugs": {
+    "url": "https://github.com/Golden0Voyager/kimi_usage/issues"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -12,6 +23,7 @@
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
+  "l10n": "./l10n",
   "contributes": {
     "configuration": {
       "title": "Kimi Usage",
@@ -19,39 +31,39 @@
         "kimiUsage.apiKey": {
           "type": "string",
           "default": "",
-          "description": "Kimi API key. If empty, reads from KIMI_API_KEY env var."
+          "description": "%config.apiKey.description%"
         },
         "kimiUsage.baseUrl": {
           "type": "string",
           "default": "https://api.kimi.com/coding/v1",
-          "description": "Kimi API base URL"
+          "description": "%config.baseUrl.description%"
         },
         "kimiUsage.refreshIntervalMinutes": {
           "type": "number",
           "default": 5,
-          "description": "Status bar refresh interval in minutes"
+          "description": "%config.refreshIntervalMinutes.description%"
         },
         "kimiUsage.warnPercent": {
           "type": "number",
           "default": 30,
-          "description": "Percentage threshold to show yellow warning"
+          "description": "%config.warnPercent.description%"
         },
         "kimiUsage.criticalPercent": {
           "type": "number",
           "default": 10,
-          "description": "Percentage threshold to show red alert"
+          "description": "%config.criticalPercent.description%"
         }
       }
     },
     "commands": [
       {
         "command": "kimiUsage.refresh",
-        "title": "Refresh Kimi Usage",
+        "title": "%command.refresh.title%",
         "category": "Kimi"
       },
       {
         "command": "kimiUsage.showDetails",
-        "title": "Show Kimi Usage Details",
+        "title": "%command.showDetails.title%",
         "category": "Kimi"
       }
     ]

@@ -1,0 +1,12 @@
+{
+    "Kimi: no key": "Kimi: 缺少 Key",
+    "Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var": "请在设置中配置 kimiUsage.apiKey 或设置 KIMI_CODING_API_KEY 环境变量",
+    "No usage data": "无用量数据",
+    "Kimi: --": "Kimi: --",
+    "Kimi: err": "Kimi: 错误",
+    "Kimi API key not configured.": "Kimi API Key 未配置。",
+    "Kimi API Usage Details": "Kimi API 用量详情",
+    "Kimi usage fetch failed: {0}": "Kimi 用量获取失败: {0}",
+    "left": "剩余",
+    "Weekly limit": "周限额"
+}

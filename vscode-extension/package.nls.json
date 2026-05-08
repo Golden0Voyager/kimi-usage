@@ -1,0 +1,11 @@
+{
+    "extension.displayName": "Kimi Code Usage",
+    "extension.description": "Show Kimi API usage in the status bar",
+    "config.apiKey.description": "Kimi API key. If empty, reads from KIMI_API_KEY env var.",
+    "config.baseUrl.description": "Kimi API base URL",
+    "config.refreshIntervalMinutes.description": "Status bar refresh interval in minutes",
+    "config.warnPercent.description": "Percentage threshold to show yellow warning",
+    "config.criticalPercent.description": "Percentage threshold to show red alert",
+    "command.refresh.title": "Refresh Kimi Usage",
+    "command.showDetails.title": "Show Kimi Usage Details"
+}

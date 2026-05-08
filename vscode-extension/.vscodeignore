@@ -1,0 +1,9 @@
+.vscode/**
+.vscode-test/**
+out/test/**
+src/**
+.gitignore
+.gitattributes
+tsconfig.json
+package-lock.json
+```

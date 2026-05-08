@@ -1,0 +1,12 @@
+{
+    "Kimi: no key": "Kimi: no key",
+    "Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var": "Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var",
+    "No usage data": "No usage data",
+    "Kimi: --": "Kimi: --",
+    "Kimi: err": "Kimi: err",
+    "Kimi API key not configured.": "Kimi API key not configured.",
+    "Kimi API Usage Details": "Kimi API Usage Details",
+    "Kimi usage fetch failed: {0}": "Kimi usage fetch failed: {0}",
+    "left": "left",
+    "Weekly limit": "Weekly limit"
+}

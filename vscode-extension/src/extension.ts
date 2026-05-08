@@ -56,8 +56,8 @@ async function refresh() {
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
-    statusBarItem.text = '$(warning) Kimi: no key';
-    statusBarItem.tooltip = 'Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var';
+    statusBarItem.text = `$(warning) ${vscode.l10n.t('Kimi: no key')}`;
+    statusBarItem.tooltip = vscode.l10n.t('Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var');
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     return;
   }
@@ -67,8 +67,8 @@ async function refresh() {
     const items = parsePayload(data);
 
     if (items.length === 0) {
-      statusBarItem.text = '$(chip) Kimi: --';
-      statusBarItem.tooltip = 'No usage data';
+      statusBarItem.text = `$(chip) ${vscode.l10n.t('Kimi: --')}`;
+      statusBarItem.tooltip = vscode.l10n.t('No usage data');
       statusBarItem.backgroundColor = undefined;
       return;
     }
@@ -79,7 +79,7 @@ async function refresh() {
     statusBarItem.text = `${emoji} Kimi ${parts.join(' ')}`;
 
     const lines = items.map(
-      i => `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% left)${i.reset_hint ? ' — ' + i.reset_hint : ''}`
+      i => `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% ${vscode.l10n.t('left')})${i.reset_hint ? ' — ' + i.reset_hint : ''}`
     );
     statusBarItem.tooltip = lines.join('\n');
 
@@ -91,7 +91,7 @@ async function refresh() {
       statusBarItem.backgroundColor = undefined;
     }
   } catch (err) {
-    statusBarItem.text = '$(sync~spin) Kimi: err';
+    statusBarItem.text = `$(sync~spin) ${vscode.l10n.t('Kimi: err')}`;
     statusBarItem.tooltip = String(err);
     statusBarItem.backgroundColor = undefined;
   }
@@ -138,7 +138,7 @@ function parsePayload(payload: any): UsageItem[] {
 
   const usage = payload?.usage;
   if (usage && typeof usage === 'object') {
-    const row = toRow(usage, 'Weekly limit');
+    const row = toRow(usage, vscode.l10n.t('Weekly limit'));
     if (row) items.push(row);
   }
 
@@ -255,7 +255,7 @@ async function showDetails() {
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
-    vscode.window.showWarningMessage('Kimi API key not configured.');
+    vscode.window.showWarningMessage(vscode.l10n.t('Kimi API key not configured.'));
     return;
   }
 
@@ -263,11 +263,11 @@ async function showDetails() {
     const data = await fetchUsage(baseUrl, apiKey);
     const items = parsePayload(data);
     const picks = items.map((i) => ({
-      label: `${i.label}: ${i.percent_left.toFixed(0)}% left`,
+      label: `${i.label}: ${i.percent_left.toFixed(0)}% ${vscode.l10n.t('left')}`,
       description: `${i.used.toLocaleString()} / ${i.limit.toLocaleString()}${i.reset_hint ? '  ·  ' + i.reset_hint : ''}`,
     }));
-    vscode.window.showQuickPick(picks, { placeHolder: 'Kimi API Usage Details' });
+    vscode.window.showQuickPick(picks, { placeHolder: vscode.l10n.t('Kimi API Usage Details') });
   } catch (err) {
-    vscode.window.showErrorMessage(`Kimi usage fetch failed: ${err}`);
+    vscode.window.showErrorMessage(vscode.l10n.t('Kimi usage fetch failed: {0}', String(err)));
   }
 }

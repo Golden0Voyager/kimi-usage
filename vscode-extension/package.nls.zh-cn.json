@@ -1,0 +1,11 @@
+{
+    "extension.displayName": "Kimi Code Usage (Kimi 用量监控)",
+    "extension.description": "在状态栏显示 Kimi API 的用量配额",
+    "config.apiKey.description": "Kimi API Key。如果为空，则读取 KIMI_API_KEY 环境变量。",
+    "config.baseUrl.description": "Kimi API Baseurl",
+    "config.refreshIntervalMinutes.description": "状态栏刷新间隔（分钟）",
+    "config.warnPercent.description": "显示黄色警告的百分比阈值",
+    "config.criticalPercent.description": "显示红色警报的百分比阈值",
+    "command.refresh.title": "刷新 Kimi 用量",
+    "command.showDetails.title": "查看 Kimi 用量详情"
+}
