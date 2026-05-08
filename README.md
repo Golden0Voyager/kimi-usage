@@ -35,7 +35,7 @@ kimi-usage --plain      # Plain text output
 
 Or run instantly without installing:
 ```bash
-uvx kimi-code-usage kimi-usage
+uvx --from kimi-code-usage kimi-usage
 ```
 
 ---
@@ -53,7 +53,7 @@ Compatible with **Claude Code, Cursor, Windsurf, Hermes**, and any MCP-enabled a
   "mcpServers": {
     "kimi-code-usage": {
       "command": "uvx",
-      "args": ["kimi-code-usage", "kimi-mcp"],
+      "args": ["--from", "kimi-code-usage", "kimi-mcp"],
       "env": {
         "KIMI_API_KEY": "YOUR_KEY"
       }
