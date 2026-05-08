@@ -35,7 +35,7 @@ kimi-usage --plain      # Plain text output
 
 Or run instantly without installing:
 ```bash
-uvx --from kimi-code-usage kimi-usage
+uvx kimi-code-usage
 ```
 
 ---
@@ -61,6 +61,8 @@ Compatible with **Claude Code, Cursor, Windsurf, Hermes**, and any MCP-enabled a
   }
 }
 ```
+
+> **Note:** The MCP server still needs `--from` because `kimi-mcp` is a separate command from the default `kimi-code-usage` entry point.
 
 Then simply ask your AI: *"Check my Kimi quota."* / *"帮我查一下 Kimi 用量。"*
 

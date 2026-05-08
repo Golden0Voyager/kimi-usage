@@ -1,6 +1,6 @@
 [project]
 name = "kimi-code-usage"
-version = "0.1.1"
+version = "0.1.2"
 description = "A curated Kimi Coding Plan usage monitor with aesthetic CLI and MCP server."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -22,6 +22,7 @@ Repository = "https://github.com/Golden0Voyager/kimi-code-usage"
 Issues = "https://github.com/Golden0Voyager/kimi-code-usage/issues"
 
 [project.scripts]
+kimi-code-usage = "kimi_code_usage.main:run_cli"
 kimi-usage = "kimi_code_usage.main:run_cli"
 kimi-mcp = "kimi_code_usage.mcp:run_mcp"
 
