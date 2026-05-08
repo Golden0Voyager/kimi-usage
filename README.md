@@ -11,57 +11,43 @@
 
 ### 🌟 Project Vision | 项目愿景
 
-In the era of "Vibecoding," transparency of resources is a prerequisite for flow. **Kimi Code Usage** is a meticulously crafted toolchain designed to bridge the gap between technical data and intuitive curation.
+In the era of "Vibecoding," transparency of resources is a prerequisite for flow. **Kimi Code Usage** is a meticulously crafted toolchain — three components, one soul.
 
-在“直觉编程”时代，资源的透明度是进入心流状态的前提。**Kimi Code Usage** 是一套精心打磨的工具链，旨在技术数据与审美策展之间建立桥梁。
+在"直觉编程"时代，资源的透明度是进入心流状态的前提。**Kimi Code Usage** 是一套精心打磨的工具链 — 三种形态，一个灵魂。
 
----
-
-### 📦 Components | 组件矩阵
-
-1.  **💎 VS Code Extension** ([Go to Marketplace](https://marketplace.visualstudio.com/items?itemName=HainingYu.kimi-code-usage))
-    A sleek indicator in your status bar with sensory alerting.
-    极致简洁的状态栏百分比显示与视觉化预警。
-2.  **🔍 MCP Server (Model Context Protocol)**
-    Exposes `get_kimi_usage` to AI Agents (Claude Code, Cursor, Windsurf).
-    供 AI 智能体调用的标准化能力接口。
-3.  **⚡ CLI Reporter**
-    Terminal-based Rich panel for instant insights.
-    基于终端的彩色面板，快速洞察配额细节。
+**Common Prerequisite:** A [Kimi Coding Plan](https://api.kimi.com/coding/v1) API Key, set as `KIMI_API_KEY` in your environment or `.env` file.
+**统一前提：** 在环境变量或 `.env` 文件中设置 `KIMI_API_KEY`。
 
 ---
 
-### 🛠️ Prerequisites | 前提条件
+### ⚡ CLI Reporter | 终端报告器
 
-- **Kimi Coding Plan** API Key (from [Kimi Coding v1](https://api.kimi.com/coding/v1))
-- Python 3.10+ (for MCP & CLI)
-- VS Code (for Extension)
+> A Rich-rendered panel in your terminal. Zero noise, pure signal.
+> 在你的终端中渲染出带有工业美感的配额面板。
 
----
-
-### ⚡ CLI & MCP Setup | 安装与配置
-
-The easiest way to install the toolchain is via **pip** or **uv**:
-最简单的安装方式是通过 **pip** 或 **uv**：
-
+**Install & Run:**
 ```bash
 pip install kimi-code-usage
-# OR run instantly without installing
-uvx kimi-code-usage
+kimi-usage              # Aesthetic Rich panel
+kimi-usage --json       # Machine-readable JSON
+kimi-usage --plain      # Plain text output
 ```
 
-#### CLI Usage | 终端使用
+Or run instantly without installing:
 ```bash
-kimi-usage          # Show aesthetic panel
-kimi-usage --json   # Output as JSON
+uvx kimi-code-usage kimi-usage
 ```
 
-#### MCP Server Setup | AI 智能体配置
-Compatible with **Claude Code, Cursor, and Windsurf**.
-兼容所有支持 MCP 协议的 AI 助手。
+---
 
-Add this to your MCP configuration file (e.g., `~/.claude/settings.json`):
+### 🔍 MCP Server | AI 智能体接口
 
+> Exposes `get_kimi_usage` to any MCP-compatible AI Agent.
+> 让你的 AI 助手能够主动感知你的额度状态。
+
+Compatible with **Claude Code, Cursor, Windsurf, Hermes**, and any MCP-enabled agent.
+
+**Add to your MCP config** (e.g., `~/.claude/settings.json`):
 ```json
 {
   "mcpServers": {
@@ -75,6 +61,31 @@ Add this to your MCP configuration file (e.g., `~/.claude/settings.json`):
   }
 }
 ```
+
+Then simply ask your AI: *"Check my Kimi quota."* / *"帮我查一下 Kimi 用量。"*
+
+---
+
+### 💎 VS Code Extension | 编辑器插件
+
+> A sleek status bar indicator with sensory color alerting.
+> 状态栏实时显示剩余百分比，颜色随额度变化而呼吸。
+
+**Install:** Search `Kimi Code Usage` in the VS Code Marketplace, or:
+```bash
+code --install-extension HainingYu.kimi-code-usage
+```
+
+**Configure** (`Settings > kimiUsage`):
+
+| Setting | Description | Default |
+| :--- | :--- | :--- |
+| `apiKey` | API key (or reads `KIMI_API_KEY` env) | `""` |
+| `refreshInterval` | Auto-refresh in minutes | `5` |
+| `warnPercent` | Yellow caution threshold | `30%` |
+| `criticalPercent` | Red alert threshold | `10%` |
+
+**Usage:** Status bar shows `⬡ W:96% 5H:99%`. Hover for details. `Cmd+Shift+P → Kimi: Refresh`.
 
 ---
 
