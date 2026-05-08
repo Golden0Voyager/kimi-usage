@@ -39,40 +39,37 @@ In the era of "Vibecoding," transparency of resources is a prerequisite for flow
 
 ---
 
-### ⚙️ Global Configuration | 全局配置
+### ⚡ CLI & MCP Setup | 安装与配置
 
-All components respect the following environment variables (or `.env` file):
-所有组件均遵循以下环境变量（或 `.env` 文件）：
-
-| Variable (变量名) | Required | Description (说明) |
-| :--- | :---: | :--- |
-| `KIMI_API_KEY` | ✅ | Your Kimi API secret / API 密钥 |
-| `KIMI_BASE_URL` | ❌ | API base URL / 接口地址 |
+The easiest way to install the toolchain is via **pip** or **uv**:
+最简单的安装方式是通过 **pip** 或 **uv**：
 
 ```bash
-# Example .env setup
-KIMI_API_KEY="your_api_key_here"
+pip install kimi-code-usage
+# OR run instantly without installing
+uvx kimi-code-usage
 ```
 
----
+#### CLI Usage | 终端使用
+```bash
+kimi-usage          # Show aesthetic panel
+kimi-usage --json   # Output as JSON
+```
 
-### 🧩 MCP Server Setup | AI 智能体配置
-
+#### MCP Server Setup | AI 智能体配置
 Compatible with **Claude Code, Cursor, and Windsurf**.
 兼容所有支持 MCP 协议的 AI 助手。
 
-#### Configuration Snippet
 Add this to your MCP configuration file (e.g., `~/.claude/settings.json`):
 
 ```json
 {
   "mcpServers": {
     "kimi-code-usage": {
-      "command": "python3",
-      "args": ["/absolute/path/to/kimi_usage_mcp.py"],
+      "command": "uvx",
+      "args": ["kimi-code-usage", "kimi-mcp"],
       "env": {
-        "KIMI_API_KEY": "YOUR_KEY",
-        "PYTHONPATH": "/absolute/path/to/kimi_usage"
+        "KIMI_API_KEY": "YOUR_KEY"
       }
     }
   }
