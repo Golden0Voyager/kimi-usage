@@ -1,12 +1,12 @@
 {
   "name": "kimi-code-usage",
-  "displayName": "%extension.displayName%",
-  "description": "%extension.description%",
+  "displayName": "Kimi Code Usage",
+  "description": "Monitor your Kimi Coding Plan API quota with aesthetic precision.",
   "icon": "assets/icon.png",
   "publisher": "HainingYu",
   "author": "Haining Yu",
   "license": "MIT",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/Golden0Voyager/kimi-code-usage.git"
@@ -26,44 +26,50 @@
   "l10n": "./l10n",
   "contributes": {
     "configuration": {
-      "title": "Kimi Usage",
+      "title": "Kimi Code Usage",
       "properties": {
-        "kimiUsage.apiKey": {
+        "kimiCodeUsage.apiKey": {
           "type": "string",
           "default": "",
-          "description": "%config.apiKey.description%"
+          "description": "Kimi API Key / 密钥 (Or set via KIMI_API_KEY env var / 或通过 KIMI_API_KEY 环境变量设置)"
         },
-        "kimiUsage.baseUrl": {
+        "kimiCodeUsage.baseUrl": {
           "type": "string",
           "default": "https://api.kimi.com/coding/v1",
-          "description": "%config.baseUrl.description%"
+          "description": "API Base URL / API 基础地址"
         },
-        "kimiUsage.refreshIntervalMinutes": {
+        "kimiCodeUsage.refreshIntervalMinutes": {
           "type": "number",
           "default": 5,
-          "description": "%config.refreshIntervalMinutes.description%"
+          "description": "Refresh interval in minutes / 自动刷新频率 (分钟)"
         },
-        "kimiUsage.warnPercent": {
+        "kimiCodeUsage.warnPercent": {
           "type": "number",
           "default": 30,
-          "description": "%config.warnPercent.description%"
+          "description": "Yellow warning threshold (%) / 黄色警告阈值 (%)"
         },
-        "kimiUsage.criticalPercent": {
+        "kimiCodeUsage.criticalPercent": {
           "type": "number",
           "default": 10,
-          "description": "%config.criticalPercent.description%"
+          "description": "Red alert threshold (%) / 红色警告阈值 (%)"
+        },
+        "kimiCodeUsage.language": {
+          "type": "string",
+          "default": "Auto",
+          "enum": ["Auto", "English", "Chinese"],
+          "description": "Display Language / 显示语言 (Requires restart / 重启插件后生效)"
         }
       }
     },
     "commands": [
       {
-        "command": "kimiUsage.refresh",
-        "title": "%command.refresh.title%",
+        "command": "kimiCodeUsage.refresh",
+        "title": "Refresh Usage / 手动刷新",
         "category": "Kimi"
       },
       {
-        "command": "kimiUsage.showDetails",
-        "title": "%command.showDetails.title%",
+        "command": "kimiCodeUsage.showDetails",
+        "title": "Show Usage Details / 查看用量详情",
         "category": "Kimi"
       }
     ]

@@ -1,8 +1,13 @@
-<p align="center">
-  <img src="assets/banner.png" width="100%" alt="Kimi Code Usage Banner">
-</p>
+```text
+ ██╗  ██╗ ██╗ ███╗   ███╗ ██╗     ██████╗  ██████╗  ██████╗  ███████╗
+ ██║ ██╔╝ ██║ ████╗ ████║ ██║    ██╔════╝ ██╔═══██╗ ██╔══██╗ ██╔════╝
+ █████╔╝  ██║ ██╔████╔██║ ██║    ██║      ██║   ██║ ██║  ██║ █████╗
+ ██╔═██╗  ██║ ██║╚██╔╝██║ ██║    ██║      ██║   ██║ ██║  ██║ ██╔══╝
+ ██║  ██╗ ██║ ██║ ╚═╝ ██║ ██║    ╚██████╗ ╚██████╔╝ ██████╔╝ ███████╗
+ ╚═╝  ╚═╝ ╚═╝ ╚═╝     ╚═╝ ╚═╝     ╚═════╝  ╚═════╝  ╚═════╝  ╚══════╝
+```
 
-# Kimi Code Usage (Kimi 用量监控)
+# Kimi Code Usage (Kimi 轨道遥测仪)
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/visual-studio-marketplace/v/HainingYu.kimi-code-usage.svg" alt="Marketplace"></a>
@@ -11,79 +16,81 @@
 </p>
 
 <p align="center">
-  <strong>Manifesting your AI quota with aesthetic precision.</strong><br>
-  <strong>以优雅的姿态，感知你的 AI 额度。</strong>
+  <strong>Navigating your AI trajectory with orbital precision.</strong><br>
+  <strong>以环月轨道的精度，感知你的 AI 资源余量。</strong>
 </p>
 
 ---
 
-### 🌟 Why Kimi Code Usage? | 为什么选择它？
+### 🌑 Why Kimi Code Usage? | 为什么选择它？
 
-In the era of "Vibecoding," your flow shouldn't be interrupted by unexpected quota limits. **Kimi Code Usage** is a curated extension that brings transparency to your AI consumption, allowing you to focus on creation while staying aware of your resources.
+In the vastness of the code universe, your creative flow shouldn't be pulled down by the unexpected gravity well of API quota limits. **Kimi Code Usage** acts as your orbital telemetry system. It brings transparency to your AI consumption, allowing you to focus on exploring the digital cosmos while maintaining full awareness of your life-support resources.
 
-在“直觉编程”时代，你的灵感流不应被突如其来的额度超限所打断。**Kimi Code Usage** 为你的 AI 消耗提供透明的实时监控，让你在专注创作的同时，对资源状况了然于胸。
-
----
-
-### 🖼️ Showcase | 效果展示
-
-<p align="center">
-  <img src="assets/screenshot.png" width="80%" alt="Actual Usage Screenshot">
-</p>
+在广袤的代码宇宙中，你的灵感航线不应被突如其来的额度耗尽（引力井）所打断。**Kimi Code Usage** 如同你的专属轨道遥测仪，为你的 AI 消耗提供极简而透明的实时监控，让你在探索深空的专注中，对系统资源状况了然于胸。
 
 ---
 
-### ✨ Features | 功能特性
+### 🛰️ Telemetry Showcase | 遥测显示
 
-- **💎 Minimalist Status Bar | 极简状态栏**
-  A sleek indicator showing remaining API quota percentage at a glance.
-  极致简洁的百分比显示，一眼看清剩余额度。
-- **🎨 Sensory Alerting | 色彩感知提醒**
-  Intelligent color shifts to match your "vibe": 
-  智能色彩预警，完美融入你的开发氛围：
-  - `30%` Remaining: **Amber Caution** (保持关注)
-  - `10%` Remaining: **Scarlet Alert** (紧急预警)
-- **🔍 Deep Insights | 详尽数据流**
-  Hover to reveal a precisely curated breakdown of your weekly and short-term limits.
-  悬浮触发详尽的数据面板，掌握周限额与短时限额的每一处细节。
-- **⚡ Quick Actions | 瞬时响应**
-  - `Kimi: Refresh Usage` — Instant sync. (立即同步)
-  - `Kimi: Show Details` — Deep dive into stats. (深度数据详情)
+```text
+[ $(chip) Kimi 周限额:96% 5小时:99% ]
+--------------------------------------------------
+| Kimi API Telemetry Details                     |
+| Weekly limit: 96,000 / 100,000 (96% left)      |
+| 5h limit: 1,980 / 2,000 (99% left)             |
+--------------------------------------------------
+```
 
 ---
 
-### 🛠️ Quick Start | 快速上手
+### ✨ Systems | 核心组件
 
-1.  **Install** the extension from the VS Code Marketplace.
-2.  **Configure** your API Key (Settings > `kimiUsage.apiKey`).
-3.  **Vibe check!** Watch your quota manifest in the status bar.
-
-1.  从商店**安装**插件。
-2.  **配置** API Key（设置 > `kimiUsage.apiKey`）。
-3.  **开启创作！** 在状态栏实时感知你的额度。
+- **Orbital HUD | 轨道级状态栏**
+  A sleek indicator showing your remaining API telemetry at a glance.
+  极致简洁的百分比显示，一眼看清飞船的剩余能量。
+- **Atmospheric Alerting | 气流色彩预警**
+  Intelligent color shifts to match your trajectory:
+  智能色彩预警，完美融入你的代码轨道：
+  - `30%` Remaining: **Stratosphere Caution** (平流层预警 - 保持关注)
+  - `10%` Remaining: **Re-entry Alert** (大气层红警 - 严重告警)
+- **Deep Space Insights | 深空数据探针**
+  Hover to reveal a precisely curated breakdown of your weekly and short-term orbital limits.
+  悬浮触发详尽的数据面板，掌握长周期与短周期限额的每一处细节。
+- **Thruster Controls | 推进器微调**
+  - `Kimi: Refresh Usage` — Instant telemetry sync. (立即同步雷达数据)
+  - `Kimi: Show Details` — Deep dive into stats. (查看深空数据面板)
 
 ---
 
-### ⚙️ Configuration | 配置详情
+### 🚀 Launch Sequence | 发射序列
 
-| Setting (设置项) | Description (说明) | Default |
+1.  **Dock** the extension from the VS Code Marketplace. (从商店安装扩展)
+2.  **Calibrate** your API Key in Settings > `kimiUsage.apiKey`, or via the `.env` module. (配置你的 API 密钥)
+3.  **Liftoff!** Watch your quota manifest in the status bar. (点火起飞！在状态栏实时感知资源消耗)
+
+---
+
+### ⚙️ Navigation Specs | 导航配置
+
+| Setting (配置节点) | Description (说明) | Default |
 | :--- | :--- | :--- |
-| `apiKey` | Your Kimi API secret / API 密钥 | `KIMI_API_KEY` |
-| `baseUrl` | API base URL / 接口地址 | `Kimi Coding V1` |
-| `refreshInterval` | Auto-sync minutes / 自动刷新间隔 | `5` |
-| `warnPercent` | Yellow caution threshold / 警告阈值 | `30%` |
-| `criticalPercent` | Red alert threshold / 严重阈值 | `10%` |
+| `apiKey` | Your Kimi API secret / 核心密钥 | `KIMI_CODING_API_KEY` |
+| `baseUrl` | API base URL / 接口基站 | `Kimi Coding V1` |
+| `refreshInterval` | Auto-sync minutes / 雷达刷新间隔 | `5` |
+| `warnPercent` | Yellow caution threshold / 黄色平流层预警 | `30%` |
+| `criticalPercent` | Red alert threshold / 红色大气层告警 | `10%` |
 
 ---
 
-### 🎨 About the Curator | 关于策展人
+### 👨‍🚀 About the Commander | 关于指令长
 
-Crafted with ❤️ by **Haining Yu**, an Art Curator and Vibecoder. This extension is a piece of digital art designed to bridge the gap between aesthetic curation and intuitive, AI-powered coding.
+Engineered with ❤️ by **Haining Yu**. This extension is a piece of digital architecture designed to bridge the gap between aesthetic curation and intuitive, AI-powered exploration.
 
-由 **Haining Yu** 精心打磨。作为一名艺术策展人与 Vibecoder，我将代码视作展览，力求在审美策展与直觉化 AI 编程之间寻找完美的平衡。
+由 **Haining Yu** 精心打磨。它不仅是一个开发工具，更是一件融合了美学策展与直觉化 AI 探索的数字航天舱组件。
 
 ---
 
 <p align="center">
-  <strong>Enjoy the flow. Stay in the vibe.</strong>
+  <strong>See you on the dark side of the moon.</strong>
 </p>
+

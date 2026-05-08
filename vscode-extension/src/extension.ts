@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import * as https from 'https';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface UsageItem {
   label: string;
@@ -12,18 +14,65 @@ interface UsageItem {
 
 let statusBarItem: vscode.StatusBarItem;
 let intervalId: NodeJS.Timeout | undefined;
+let translator: Translator;
+
+class Translator {
+  private bundle: Record<string, string> = {};
+  private useNative: boolean = true;
+
+  constructor(context: vscode.ExtensionContext) {
+    this.update(context);
+  }
+
+  update(context: vscode.ExtensionContext) {
+    const config = vscode.workspace.getConfiguration('kimiCodeUsage');
+    const lang = config.get<string>('language', 'Auto');
+
+    if (lang === 'Auto') {
+      this.useNative = true;
+      this.bundle = {};
+    } else {
+      this.useNative = false;
+      const fileName = lang === 'Chinese' ? 'bundle.l10n.zh-cn.json' : 'bundle.l10n.json';
+      const filePath = path.join(context.extensionPath, 'l10n', fileName);
+      try {
+        if (fs.existsSync(filePath)) {
+          this.bundle = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        }
+      } catch (e) {
+        console.error('Failed to load l10n bundle', e);
+        this.useNative = true;
+      }
+    }
+  }
+
+  t(message: string, ...args: any[]): string {
+    let str = this.useNative ? vscode.l10n.t(message) : (this.bundle[message] || message);
+    if (args.length > 0) {
+      args.forEach((arg, i) => {
+        str = str.replace(`{${i}}`, String(arg));
+      });
+    }
+    return str;
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
+  translator = new Translator(context);
+  
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = 'kimiUsage.showDetails';
+  statusBarItem.command = 'kimiCodeUsage.showDetails';
   statusBarItem.show();
 
-  const refreshCmd = vscode.commands.registerCommand('kimiUsage.refresh', refresh);
-  const detailsCmd = vscode.commands.registerCommand('kimiUsage.showDetails', showDetails);
+  const refreshCmd = vscode.commands.registerCommand('kimiCodeUsage.refresh', refresh);
+  const detailsCmd = vscode.commands.registerCommand('kimiCodeUsage.showDetails', showDetails);
 
   // Listen for configuration changes
   const configChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration('kimiUsage')) {
+    if (e.affectsConfiguration('kimiCodeUsage')) {
+      if (e.affectsConfiguration('kimiCodeUsage.language')) {
+        translator.update(context);
+      }
       restartInterval();
       refresh();
     }
@@ -35,11 +84,15 @@ export function activate(context: vscode.ExtensionContext) {
   restartInterval();
 }
 
+function t(message: string, ...args: any[]): string {
+  return translator.t(message, ...args);
+}
+
 function restartInterval() {
   if (intervalId) {
     clearInterval(intervalId);
   }
-  const cfg = vscode.workspace.getConfiguration('kimiUsage');
+  const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
   const minutes = cfg.get<number>('refreshIntervalMinutes', 5);
   intervalId = setInterval(refresh, minutes * 60 * 1000);
 }
@@ -50,14 +103,52 @@ export function deactivate() {
   }
 }
 
+async function resolveApiKey(): Promise<string> {
+  const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
+  const configuredKey = cfg.get<string>('apiKey', '');
+  if (configuredKey) return configuredKey;
+
+  // Search workspace .env files
+  if (vscode.workspace.workspaceFolders) {
+    for (const folder of vscode.workspace.workspaceFolders) {
+      const envPath = vscode.Uri.joinPath(folder.uri, '.env');
+      try {
+        const envData = await vscode.workspace.fs.readFile(envPath);
+        const envText = Buffer.from(envData).toString('utf8');
+        const lines = envText.split('\n');
+        let fallbackKey = '';
+        for (const line of lines) {
+          const match = line.match(/^\s*(KIMI_CODING_API_KEY|KIMI_API_KEY)\s*=\s*['"]?([^'"\s]+)['"]?/);
+          if (match) {
+            if (match[1] === 'KIMI_CODING_API_KEY') {
+              return match[2]; // Highest priority in .env
+            } else if (!fallbackKey) {
+              fallbackKey = match[2];
+            }
+          }
+        }
+        if (fallbackKey) return fallbackKey;
+      } catch (e) {
+        // .env not found or unreadable in this folder, continue
+      }
+    }
+  }
+
+  // Check process.env (fallback)
+  if (process.env.KIMI_CODING_API_KEY) return process.env.KIMI_CODING_API_KEY;
+  if (process.env.KIMI_API_KEY) return process.env.KIMI_API_KEY;
+
+  return '';
+}
+
 async function refresh() {
-  const cfg = vscode.workspace.getConfiguration('kimiUsage');
-  const apiKey = cfg.get<string>('apiKey', '') || process.env.KIMI_CODING_API_KEY || '';
+  const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
+  const apiKey = await resolveApiKey();
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
-    statusBarItem.text = `$(warning) ${vscode.l10n.t('Kimi: no key')}`;
-    statusBarItem.tooltip = vscode.l10n.t('Set kimiUsage.apiKey in VS Code settings or KIMI_CODING_API_KEY env var');
+    statusBarItem.text = `$(warning) ${t('Kimi: no key')}`;
+    statusBarItem.tooltip = t('Set apiKey in VS Code settings or KIMI_CODING_API_KEY env var');
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     return;
   }
@@ -67,8 +158,8 @@ async function refresh() {
     const items = parsePayload(data);
 
     if (items.length === 0) {
-      statusBarItem.text = `$(chip) ${vscode.l10n.t('Kimi: --')}`;
-      statusBarItem.tooltip = vscode.l10n.t('No usage data');
+      statusBarItem.text = `$(chip) ${t('Kimi: --')}`;
+      statusBarItem.tooltip = t('No usage data');
       statusBarItem.backgroundColor = undefined;
       return;
     }
@@ -79,7 +170,7 @@ async function refresh() {
     statusBarItem.text = `${emoji} Kimi ${parts.join(' ')}`;
 
     const lines = items.map(
-      i => `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% ${vscode.l10n.t('left')})${i.reset_hint ? ' — ' + i.reset_hint : ''}`
+      i => `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% ${t('left')})${i.reset_hint ? ' — ' + i.reset_hint : ''}`
     );
     statusBarItem.tooltip = lines.join('\n');
 
@@ -91,7 +182,7 @@ async function refresh() {
       statusBarItem.backgroundColor = undefined;
     }
   } catch (err) {
-    statusBarItem.text = `$(sync~spin) ${vscode.l10n.t('Kimi: err')}`;
+    statusBarItem.text = `$(sync~spin) ${t('Kimi: err')}`;
     statusBarItem.tooltip = String(err);
     statusBarItem.backgroundColor = undefined;
   }
@@ -138,7 +229,7 @@ function parsePayload(payload: any): UsageItem[] {
 
   const usage = payload?.usage;
   if (usage && typeof usage === 'object') {
-    const row = toRow(usage, vscode.l10n.t('Weekly limit'));
+    const row = toRow(usage, t('Weekly limit'));
     if (row) items.push(row);
   }
 
@@ -243,19 +334,27 @@ function toInt(v: any): number | null {
 
 function shortLabel(label: string): string {
   const lower = label.toLowerCase();
-  if (lower.includes('weekly') || lower.includes('week')) return 'W';
-  if (lower.includes('5h') || lower.includes('5 hour')) return '5H';
-  if (lower.includes('month') || lower.includes('monthly')) return 'M';
-  return label.slice(0, 2).toUpperCase();
+  const isZh = translator.t('left') === '剩余'; // 简单的判断是否为中文环境
+
+  if (lower.includes('weekly') || lower.includes('week') || lower.includes('周')) {
+    return isZh ? '周限额' : 'W';
+  }
+  if (lower.includes('5h') || lower.includes('5 hour') || lower.includes('5小时')) {
+    return isZh ? '5小时' : '5H';
+  }
+  if (lower.includes('month') || lower.includes('monthly') || lower.includes('月')) {
+    return isZh ? '月限额' : 'M';
+  }
+  return label.slice(0, 3);
 }
 
 async function showDetails() {
-  const cfg = vscode.workspace.getConfiguration('kimiUsage');
-  const apiKey = cfg.get<string>('apiKey', '') || process.env.KIMI_CODING_API_KEY || '';
+  const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
+  const apiKey = await resolveApiKey();
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
-    vscode.window.showWarningMessage(vscode.l10n.t('Kimi API key not configured.'));
+    vscode.window.showWarningMessage(t('Kimi API key not configured.'));
     return;
   }
 
@@ -263,11 +362,11 @@ async function showDetails() {
     const data = await fetchUsage(baseUrl, apiKey);
     const items = parsePayload(data);
     const picks = items.map((i) => ({
-      label: `${i.label}: ${i.percent_left.toFixed(0)}% ${vscode.l10n.t('left')}`,
+      label: `${i.label}: ${i.percent_left.toFixed(0)}% ${t('left')}`,
       description: `${i.used.toLocaleString()} / ${i.limit.toLocaleString()}${i.reset_hint ? '  ·  ' + i.reset_hint : ''}`,
     }));
-    vscode.window.showQuickPick(picks, { placeHolder: vscode.l10n.t('Kimi API Usage Details') });
+    vscode.window.showQuickPick(picks, { placeHolder: t('Kimi API Usage Details') });
   } catch (err) {
-    vscode.window.showErrorMessage(vscode.l10n.t('Kimi usage fetch failed: {0}', String(err)));
+    vscode.window.showErrorMessage(t('Kimi usage fetch failed: {0}', String(err)));
   }
 }
