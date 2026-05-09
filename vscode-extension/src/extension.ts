@@ -459,16 +459,16 @@ function toInt(v: any): number | null {
 
 function shortLabel(label: string): string {
   const lower = label.toLowerCase();
-  const isZh = translator.t('left') === '剩余'; // 简单的判断是否为中文环境
+  const isZh = translator.t('left') === '剩余';
 
   if (lower.includes('weekly') || lower.includes('week') || lower.includes('周')) {
-    return isZh ? '周限额' : 'W';
+    return isZh ? '周' : 'W';
   }
   if (lower.includes('5h') || lower.includes('5 hour') || lower.includes('5小时')) {
-    return isZh ? '5小时' : '5H';
+    return isZh ? '5时' : '5H';
   }
   if (lower.includes('month') || lower.includes('monthly') || lower.includes('月')) {
-    return isZh ? '月限额' : 'M';
+    return isZh ? '月' : 'M';
   }
   return label.slice(0, 3);
 }
