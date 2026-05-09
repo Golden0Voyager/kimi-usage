@@ -260,7 +260,7 @@ async function refresh() {
     }
   } catch (err) {
     statusBarItem.text = `$(sync~spin) Starman...`;
-    statusBarItem.tooltip = 'Planet Earth is blue and there's nothing I can do. ' + String(err);
+    statusBarItem.tooltip = "Planet Earth is blue and there's nothing I can do. " + String(err);
     statusBarItem.backgroundColor = undefined;
   }
 }
