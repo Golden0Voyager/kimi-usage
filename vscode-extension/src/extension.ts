@@ -240,11 +240,7 @@ async function refresh() {
 
       // Add pace detail for weekly item
       if (i === weeklyItem && pace) {
-        const elapsedRatio = Math.min(1, (WEEKLY_WINDOW_SECONDS - (i.reset_seconds ?? 0)) / WEEKLY_WINDOW_SECONDS);
-        const expected = elapsedRatio * 100;
-        const actual = ((i.used / i.limit) * 100);
-        tooltipLines.push(`  ${formatPaceBar(pace.ratio)} Pace ${pace.ratio.toFixed(1)}x — ${stateName}`);
-        tooltipLines.push(`  ${t('Expected')} ${expected.toFixed(1)}%  ·  ${t('Actual')} ${actual.toFixed(1)}%`);
+        tooltipLines.push(`  ${formatPaceBar(pace.ratio)} ${t('Pace')} ${pace.ratio.toFixed(1)}x — ${stateName}`);
       }
     }
     statusBarItem.tooltip = tooltipLines.join('\n');
@@ -399,17 +395,18 @@ function formatResetTime(val: string): string {
 }
 
 function formatDuration(seconds: number): string {
+  const isZh = translator.t('left') === '剩余';
   const parts: string[] = [];
   const days = Math.floor(seconds / 86400);
-  if (days) parts.push(`${days}d`);
+  if (days) parts.push(isZh ? `${days}天` : `${days}d`);
   const rem = seconds % 86400;
   const hours = Math.floor(rem / 3600);
-  if (hours) parts.push(`${hours}h`);
+  if (hours) parts.push(isZh ? `${hours}时` : `${hours}h`);
   const mins = Math.floor((rem % 3600) / 60);
-  if (mins) parts.push(`${mins}m`);
+  if (mins) parts.push(isZh ? `${mins}分` : `${mins}m`);
   const secs = rem % 60;
-  if (secs && !parts.length) parts.push(`${secs}s`);
-  return parts.join(' ') || '0s';
+  if (secs && !parts.length) parts.push(isZh ? `${secs}秒` : `${secs}s`);
+  return parts.join(' ') || (isZh ? '0秒' : '0s');
 }
 
 function formatResetTimeAbsolute(val: string): { absolute: string; relative: string } {
@@ -487,7 +484,7 @@ async function showDetails() {
     const items = parsePayload(data);
 
     const picks = items.map((i) => {
-      let description = `${i.used.toLocaleString()} / ${i.limit.toLocaleString()}`;
+      let description = '';
 
       // Try to show absolute reset time
       const raw = data?.usage || data?.limits?.find((l: any) => {
