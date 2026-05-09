@@ -13,6 +13,44 @@ interface UsageItem {
   reset_seconds: number | null;
 }
 
+interface PaceState {
+  ratio: number;
+  state: 'warp' | 'impulse' | 'moonwalk';
+}
+
+const WEEKLY_WINDOW_SECONDS = 7 * 24 * 3600;
+
+function computePace(item: UsageItem): PaceState | null {
+  if (!item.reset_seconds || item.reset_seconds <= 0) return null;
+  if (item.limit <= 0) return null;
+
+  const elapsed = WEEKLY_WINDOW_SECONDS - item.reset_seconds;
+  if (elapsed <= 0 || elapsed < 3600) return null;
+
+  const actualUsedRatio = item.used / item.limit;
+  const elapsedRatio = elapsed / WEEKLY_WINDOW_SECONDS;
+
+  const rawRatio = elapsedRatio > 0 ? actualUsedRatio / elapsedRatio : 0;
+  const ratio = Math.min(rawRatio, 5.0);
+
+  let state: 'warp' | 'impulse' | 'moonwalk';
+  if (ratio >= 1.1) state = 'warp';
+  else if (ratio <= 0.9) state = 'moonwalk';
+  else state = 'impulse';
+
+  return { ratio, state };
+}
+
+function formatPaceBar(ratio: number): string {
+  let filled: number;
+  if (ratio > 1.5) filled = 5;
+  else if (ratio >= 1.1) filled = 4;
+  else if (ratio >= 0.9) filled = 3;
+  else if (ratio >= 0.5) filled = 2;
+  else filled = 1;
+  return '▰'.repeat(filled) + '▱'.repeat(5 - filled);
+}
+
 let statusBarItem: vscode.StatusBarItem;
 let intervalId: NodeJS.Timeout | undefined;
 let translator: Translator;
@@ -335,6 +373,45 @@ function formatDuration(seconds: number): string {
   const secs = rem % 60;
   if (secs && !parts.length) parts.push(`${secs}s`);
   return parts.join(' ') || '0s';
+}
+
+function formatResetTimeAbsolute(val: string): { absolute: string; relative: string } {
+  try {
+    let iso = val;
+    if (iso.includes('.') && iso.endsWith('Z')) {
+      const [base, frac] = iso.slice(0, -1).split('.');
+      iso = `${base}.${frac.slice(0, 6)}Z`;
+    }
+    const dt = new Date(iso.replace('Z', '+00:00'));
+    const now = new Date();
+    const sec = Math.floor((dt.getTime() - now.getTime()) / 1000);
+
+    const relative = sec <= 0 ? 'reset' : formatDuration(sec);
+
+    const hours = dt.getHours().toString().padStart(2, '0');
+    const mins = dt.getMinutes().toString().padStart(2, '0');
+    const isZh = translator.t('left') === '剩余';
+
+    if (sec < 86400 && sec > 0) {
+      const absolute = isZh
+        ? `今天 ${hours}:${mins}`
+        : `today ${hours}:${mins}`;
+      return { absolute, relative };
+    }
+
+    const weekdays = isZh
+      ? ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const wd = weekdays[dt.getDay()];
+
+    const absolute = isZh
+      ? `${wd} ${hours}:${mins}`
+      : `${wd} ${hours}:${mins}`;
+
+    return { absolute, relative };
+  } catch {
+    return { absolute: val, relative: 'unknown' };
+  }
 }
 
 function toInt(v: any): number | null {
