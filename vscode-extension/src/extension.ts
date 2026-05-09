@@ -11,6 +11,7 @@ interface UsageItem {
   percent_left: number;
   reset_hint: string | null;
   reset_seconds: number | null;
+  reset_at: string | null;
 }
 
 interface PaceState {
@@ -20,15 +21,15 @@ interface PaceState {
 
 const WEEKLY_WINDOW_SECONDS = 7 * 24 * 3600;
 
-function computePace(item: UsageItem): PaceState | null {
+function computePace(item: UsageItem, windowSeconds: number): PaceState | null {
   if (!item.reset_seconds || item.reset_seconds <= 0) return null;
   if (item.limit <= 0) return null;
 
-  const elapsed = WEEKLY_WINDOW_SECONDS - item.reset_seconds;
+  const elapsed = windowSeconds - item.reset_seconds;
   if (elapsed <= 0 || elapsed < 3600) return null;
 
   const actualUsedRatio = item.used / item.limit;
-  const elapsedRatio = elapsed / WEEKLY_WINDOW_SECONDS;
+  const elapsedRatio = elapsed / windowSeconds;
 
   const rawRatio = elapsedRatio > 0 ? actualUsedRatio / elapsedRatio : 0;
   const ratio = Math.min(rawRatio, 5.0);
@@ -39,6 +40,17 @@ function computePace(item: UsageItem): PaceState | null {
   else state = 'impulse';
 
   return { ratio, state };
+}
+
+function getWindowSeconds(label: string): number {
+  const lower = label.toLowerCase();
+  if (lower.includes('5h') || lower.includes('5 hour') || lower.includes('5小时')) {
+    return 5 * 3600;
+  }
+  if (lower.includes('month') || lower.includes('monthly') || lower.includes('月')) {
+    return 30 * 24 * 3600;
+  }
+  return WEEKLY_WINDOW_SECONDS;
 }
 
 function formatPaceBar(ratio: number): string {
@@ -210,7 +222,7 @@ async function refresh() {
     const showPace = cfg.get<boolean>('showPaceIndicator', true);
     let pace: PaceState | null = null;
     if (weeklyItem && showPace) {
-      pace = computePace(weeklyItem);
+      pace = computePace(weeklyItem, getWindowSeconds(weeklyItem.label));
     }
 
     // Build prefix with moon emoji + state
@@ -221,38 +233,59 @@ async function refresh() {
       ? t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk')
       : t('Impulse');
     const bar = pace ? formatPaceBar(pace.ratio) : '▰▰▱';
-    const ratioText = pace ? `${pace.ratio.toFixed(1)}x` : (showPace ? '1.0x' : '');
 
-    const suffix = showPace ? `> ${stateName} ${ratioText}`.trim() : '';
+    const suffix = showPace
+      ? (pace?.state === 'warp' ? `> $(warning) ${stateName}` : pace?.state === 'impulse' ? `> $(dashboard) ${stateName}` : `> $(debug-step-over) ${stateName}`).trim()
+      : '';
 
     const parts = items.map(i => `${shortLabel(i.label)}:${i.percent_left.toFixed(0)}%`);
-    const prefix = `${moonEmoji} Kimi ${bar} ${parts.join(' ')}`.trim();
+    const prefix = `${moonEmoji}  ${bar}  ${parts.join(' ')}`.trim();
     statusBarItem.text = `${prefix} ${suffix}`.trim();
 
-    // Tooltip with pace details
+    statusBarItem.backgroundColor = pace?.state === 'warp'
+      ? new vscode.ThemeColor('statusBarItem.errorBackground')
+      : undefined;
+
+    // Tooltip: reset times + pace only, centered
     const tooltipLines: string[] = [];
+    const paceSegments: string[] = [];
     for (const i of items) {
-      let line = `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% ${t('left')})`;
-      if (i.reset_hint) {
-        line += ' — ' + i.reset_hint;
+      if (i.reset_at) {
+        const formatted = formatResetTimeAbsolute(i.reset_at);
+        const isZh = translator.t('left') === '剩余';
+        const lower = i.label.toLowerCase();
+        const name = isZh
+          ? (lower.includes('week') || lower.includes('周') ? '每周' : lower.includes('5h') || lower.includes('5小时') ? '每5小时' : lower.includes('month') || lower.includes('月') ? '每月' : i.label)
+          : (lower.includes('week') || lower.includes('周') ? 'Weekly' : lower.includes('5h') || lower.includes('5小时') ? '5 Hours' : lower.includes('month') || lower.includes('月') ? 'Monthly' : i.label);
+        const line = isZh
+          ? `${name}：剩余燃料：${formatted.relative} | 重新装填：${formatted.absolute}`
+          : `${name}: Fuel: ${formatted.relative} | Refuel: ${formatted.absolute}`;
+        tooltipLines.push(`<center>${line}</center>`);
+      } else if (i.reset_hint) {
+        tooltipLines.push(`<center>${i.reset_hint}</center>`);
       }
-      tooltipLines.push(line);
-
-      // Add pace detail for weekly item
-      if (i === weeklyItem && pace) {
-        tooltipLines.push(`  ${formatPaceBar(pace.ratio)} ${t('Pace')} ${pace.ratio.toFixed(1)}x — ${stateName}`);
+      const itemPace = showPace ? computePace(i, getWindowSeconds(i.label)) : null;
+      if (itemPace) {
+        const isZh = translator.t('left') === '剩余';
+        const rawDeviation = (itemPace.ratio - 1.0) * 100;
+        const deviation = rawDeviation.toFixed(2);
+        const sign = rawDeviation > 0 ? '+' : '';
+        const lower = i.label.toLowerCase();
+        const segmentName = isZh
+          ? (lower.includes('week') || lower.includes('周') ? '每周' : lower.includes('5h') || lower.includes('5小时') ? '每5小时' : shortLabel(i.label))
+          : shortLabel(i.label);
+        paceSegments.push(`${segmentName} ${sign}${deviation}%`);
       }
     }
-    statusBarItem.tooltip = tooltipLines.join('\n');
-
-    const minPercent = Math.min(...items.map(i => i.percent_left));
-    if (minPercent <= cfg.get<number>('criticalPercent', 10)) {
-      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-    } else if (minPercent <= cfg.get<number>('warnPercent', 30)) {
-      statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    } else {
-      statusBarItem.backgroundColor = undefined;
+    if (paceSegments.length > 0) {
+      const isZh = translator.t('left') === '剩余';
+      const label = isZh ? '曲率' : 'Warp Factor';
+      tooltipLines.push(`<center>${label}: ${paceSegments.join(' | ')}</center>`);
     }
+    const tooltip = new vscode.MarkdownString(tooltipLines.join('<br>'));
+    tooltip.supportHtml = true;
+    statusBarItem.tooltip = tooltip;
+
   } catch (err) {
     statusBarItem.text = `$(sync~spin) Starman...`;
     statusBarItem.tooltip = "Planet Earth is blue and there's nothing I can do. " + String(err);
@@ -268,7 +301,7 @@ function fetchUsage(baseUrl: string, apiKey: string): Promise<any> {
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'User-Agent': 'kimi-usage-vscode/0.1.0',
+          'User-Agent': 'kimi-usage-vscode/0.1.4',
         },
         timeout: 10000,
       },
@@ -357,6 +390,13 @@ function toRow(data: any, defaultLabel: string): UsageItem | null {
     }
   }
 
+  // Extract raw reset_at string for hover display
+  let reset_at: string | null = null;
+  for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
+    const v = data[key];
+    if (v) { reset_at = String(v); break; }
+  }
+
   return {
     label: String(data.name || data.title || defaultLabel),
     used: u,
@@ -365,6 +405,7 @@ function toRow(data: any, defaultLabel: string): UsageItem | null {
     percent_left: l > 0 ? ((l - u) / l) * 100 : 0,
     reset_hint: resetHint(data),
     reset_seconds,
+    reset_at,
   };
 }
 
@@ -445,10 +486,21 @@ function formatResetTimeAbsolute(val: string): { absolute: string; relative: str
     const mins = dt.getMinutes().toString().padStart(2, '0');
     const isZh = translator.t('left') === '剩余';
 
-    if (sec < 86400 && sec > 0) {
+    const resetDay = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    if (resetDay.getTime() === today.getTime()) {
       const absolute = isZh
         ? `今天 ${hours}:${mins}`
-        : `today ${hours}:${mins}`;
+        : `Today ${hours}:${mins}`;
+      return { absolute, relative };
+    }
+    if (resetDay.getTime() === tomorrow.getTime()) {
+      const absolute = isZh
+        ? `明天 ${hours}:${mins}`
+        : `Tomorrow ${hours}:${mins}`;
       return { absolute, relative };
     }
 
@@ -502,8 +554,27 @@ async function showDetails() {
     const data = await fetchUsage(baseUrl, apiKey);
     const items = parsePayload(data);
 
+    const showPace = cfg.get<boolean>('showPaceIndicator', true);
+
     const picks = items.map((i) => {
-      let description = '';
+      const isZh = translator.t('left') === '剩余';
+      const lower = i.label.toLowerCase();
+      const displayName = isZh
+        ? (lower.includes('week') || lower.includes('周') ? '每周' : lower.includes('5h') || lower.includes('5小时') ? '每5小时' : lower.includes('month') || lower.includes('月') ? '每月' : i.label)
+        : (lower.includes('week') || lower.includes('周') ? 'Weekly' : lower.includes('5h') || lower.includes('5小时') ? '5 Hours' : lower.includes('month') || lower.includes('月') ? 'Monthly' : i.label);
+      let label = `${displayName}: ${i.percent_left.toFixed(0)}% ${t('left')}`;
+
+      // Append pace info
+      const pace = showPace ? computePace(i, getWindowSeconds(i.label)) : null;
+      if (pace) {
+        const isZh = translator.t('left') === '剩余';
+        const paceLabel = isZh ? '曲率' : 'Warp Factor';
+        const rawDeviation = (pace.ratio - 1.0) * 100;
+        const deviation = rawDeviation.toFixed(2);
+        const sign = rawDeviation > 0 ? '+' : '';
+        const stateName = t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk');
+        label += `    [${paceLabel}: ${sign}${deviation}% > ${stateName}]`;
+      }
 
       // Try to show absolute reset time
       const raw = data?.usage || data?.limits?.find((l: any) => {
@@ -518,19 +589,16 @@ async function showDetails() {
             const formatted = formatResetTimeAbsolute(String(v));
             const isZh = translator.t('left') === '剩余';
             if (isZh) {
-              description += `  ·  ${formatted.absolute}重置 · ${formatted.relative}`;
+              label += `    ${formatted.absolute}重置 (剩 ${formatted.relative})`;
             } else {
-              description += `  ·  Next reset: ${formatted.absolute} (in ${formatted.relative})`;
+              label += `    Resets ${formatted.absolute} (in ${formatted.relative})`;
             }
             break;
           }
         }
       }
 
-      return {
-        label: `${i.label}: ${i.percent_left.toFixed(0)}% ${t('left')}`,
-        description,
-      };
+      return { label };
     });
 
     vscode.window.showQuickPick(picks, { placeHolder: t('Kimi API Usage Details') });
