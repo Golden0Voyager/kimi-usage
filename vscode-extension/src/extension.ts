@@ -10,6 +10,7 @@ interface UsageItem {
   remaining: number;
   percent_left: number;
   reset_hint: string | null;
+  reset_seconds: number | null;
 }
 
 let statusBarItem: vscode.StatusBarItem;
@@ -258,6 +259,14 @@ function toRow(data: any, defaultLabel: string): UsageItem | null {
   if (used == null && limit == null) return null;
   const u = used ?? 0;
   const l = limit ?? 0;
+
+  // Extract raw reset seconds for pace calculation
+  let reset_seconds: number | null = null;
+  for (const key of ['reset_in', 'resetIn', 'ttl']) {
+    const s = toInt(data[key]);
+    if (s != null) { reset_seconds = s; break; }
+  }
+
   return {
     label: String(data.name || data.title || defaultLabel),
     used: u,
@@ -265,6 +274,7 @@ function toRow(data: any, defaultLabel: string): UsageItem | null {
     remaining: l - u,
     percent_left: l > 0 ? ((l - u) / l) * 100 : 0,
     reset_hint: resetHint(data),
+    reset_seconds,
   };
 }
 
