@@ -1,22 +1,7 @@
 {
-    "extension.displayName": "Kimi Code Usage",
-    "extension.description": "以优雅的姿态监控你的 Kimi Coding Plan API 配额。",
-    "config.apiKey.description": "Kimi API 密钥 (也可通过环境变量 KIMI_API_KEY 设置)",
-    "config.baseUrl.description": "API 基础地址",
-    "config.refreshIntervalMinutes.description": "自动刷新频率 (分钟)",
-    "config.warnPercent.description": "黄色警告阈值 (百分比)",
-    "config.criticalPercent.description": "红色警告阈值 (百分比)",
-    "config.language.description": "显示语言 (重启插件后生效)",
-    "command.refresh.title": "手动刷新",
-    "command.showDetails.title": "查看用量详情",
-    "Kimi: no key": "Kimi: 缺少 Key",
-    "Set apiKey in VS Code settings or KIMI_API_KEY env var": "请在设置中配置 apiKey 或设置 KIMI_API_KEY 环境变量",
-    "No usage data": "无用量数据",
-    "Kimi: --": "Kimi: --",
-    "Kimi: err": "Kimi: 错误",
-    "Kimi API key not configured.": "Kimi API Key 未配置。",
-    "Kimi API Usage Details": "Kimi API 用量详情",
-    "Kimi usage fetch failed: {0}": "Kimi 用量获取失败: {0}",
-    "left": "剩余",
-    "Weekly limit": "周限额"
+  "Warp": "曲率加速",
+  "Impulse": "脉冲推进",
+  "Moonwalk": "月球漫步",
+  "Expected": "应耗",
+  "Actual": "实耗"
 }
