@@ -43,12 +43,10 @@ function computePace(item: UsageItem): PaceState | null {
 
 function formatPaceBar(ratio: number): string {
   let filled: number;
-  if (ratio > 1.5) filled = 5;
-  else if (ratio >= 1.1) filled = 4;
-  else if (ratio >= 0.9) filled = 3;
-  else if (ratio >= 0.5) filled = 2;
-  else filled = 1;
-  return '▰'.repeat(filled) + '▱'.repeat(5 - filled);
+  if (ratio >= 1.1) filled = 3;      // Warp: ▰▰▰
+  else if (ratio >= 0.9) filled = 2;  // Impulse: ▰▰▱
+  else filled = 1;                    // Moonwalk: ▰▱▱
+  return '▰'.repeat(filled) + '▱'.repeat(3 - filled);
 }
 
 let statusBarItem: vscode.StatusBarItem;
@@ -222,13 +220,14 @@ async function refresh() {
     const stateName = pace
       ? t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk')
       : t('Impulse');
-    const bar = pace ? formatPaceBar(pace.ratio) : '▰▰▰▱▱';
+    const bar = pace ? formatPaceBar(pace.ratio) : '▰▰▱';
     const ratioText = pace ? `${pace.ratio.toFixed(1)}x` : (showPace ? '1.0x' : '');
 
-    const prefix = `${moonEmoji} Kimi ${stateName} ${bar} ${ratioText}`.trim();
+    const suffix = showPace ? `> ${stateName} ${ratioText}`.trim() : '';
 
     const parts = items.map(i => `${shortLabel(i.label)}:${i.percent_left.toFixed(0)}%`);
-    statusBarItem.text = `${prefix} ${parts.join(' ')}`;
+    const prefix = `${moonEmoji} Kimi ${bar} ${parts.join(' ')}`.trim();
+    statusBarItem.text = `${prefix} ${suffix}`.trim();
 
     // Tooltip with pace details
     const tooltipLines: string[] = [];
