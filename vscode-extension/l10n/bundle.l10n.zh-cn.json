@@ -4,5 +4,11 @@
   "Moonwalk": "月球漫步",
   "Pace": "配速",
   "Expected": "应耗",
-  "Actual": "实耗"
+  "Actual": "实耗",
+  "left": "剩余",
+  "Kimi: --": "Kimi: --",
+  "No usage data": "无用量数据",
+  "Kimi API key not configured.": "未配置 Kimi API 密钥。",
+  "Kimi usage fetch failed: {0}": "获取 Kimi 用量失败: {0}",
+  "Kimi API Usage Details": "Kimi API 用量详情"
 }
