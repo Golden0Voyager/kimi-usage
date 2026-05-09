@@ -186,8 +186,8 @@ async function refresh() {
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
-    statusBarItem.text = `$(warning) ${t('Kimi: no key')}`;
-    statusBarItem.tooltip = t('Set apiKey in VS Code settings or KIMI_CODING_API_KEY env var');
+    statusBarItem.text = `$(warning) Major Tom?`;
+    statusBarItem.tooltip = 'Ground Control to Major Tom... comms link severed. Set KIMI_API_KEY.';
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     return;
   }
@@ -259,8 +259,8 @@ async function refresh() {
       statusBarItem.backgroundColor = undefined;
     }
   } catch (err) {
-    statusBarItem.text = `$(sync~spin) ${t('Kimi: err')}`;
-    statusBarItem.tooltip = String(err);
+    statusBarItem.text = `$(sync~spin) Starman...`;
+    statusBarItem.tooltip = 'Planet Earth is blue and there's nothing I can do. ' + String(err);
     statusBarItem.backgroundColor = undefined;
   }
 }
