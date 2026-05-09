@@ -7,6 +7,13 @@
  ╚═╝  ╚═╝ ╚═╝ ╚═╝     ╚═╝ ╚═╝     ╚═════╝  ╚═════╝  ╚═════╝  ╚══════╝
 ```
 
+> *Here am I sitting in a tin can*  
+> *Far above the world*  
+> *Planet Earth is blue*  
+> *And there's nothing I can do*  
+>  
+> — **David Bowie**, *Space Oddity* (1969)
+
 # Kimi Code Usage (Kimi 轨道遥测仪)
 
 <p align="center">
@@ -33,11 +40,12 @@ In the vastness of the code universe, your creative flow shouldn't be pulled dow
 ### 🛰️ Telemetry Showcase | 遥测显示
 
 ```text
-[ $(chip) Kimi 周限额:96% 5小时:99% ]
+🌔 ▰▱▱  W:64% 5H:54%  > Moonwalk
 --------------------------------------------------
 | Kimi API Telemetry Details                     |
-| Weekly limit: 96,000 / 100,000 (96% left)      |
-| 5h limit: 1,980 / 2,000 (99% left)             |
+| Weekly: 64% left  [Warp Factor: -30% > Moonwalk]|
+| 5 Hours: 54% left [Warp Factor: -30% > Moonwalk]|
+| Resets Today 16:22 (in 3d 17h)                 |
 --------------------------------------------------
 ```
 
@@ -48,24 +56,25 @@ In the vastness of the code universe, your creative flow shouldn't be pulled dow
 - **Orbital HUD | 轨道级状态栏**
   A sleek indicator showing your remaining API telemetry at a glance.
   极致简洁的百分比显示，一眼看清飞船的剩余能量。
-- **Atmospheric Alerting | 气流色彩预警**
-  Intelligent color shifts to match your trajectory:
-  智能色彩预警，完美融入你的代码轨道：
-  - `30%` Remaining: **Stratosphere Caution** (平流层预警 - 保持关注)
-  - `10%` Remaining: **Re-entry Alert** (大气层红警 - 严重告警)
+- **Pace Indicator | 曲率引擎指针**
+  Real-time consumption velocity relative to elapsed time. Know whether you're burning fuel too fast or cruising efficiently.
+  实时追踪你的 API 消耗速率与日历进度的比值，洞悉燃料燃烧节奏：
+  - 🌒 **Overload** (曲率加速) — Burning faster than elapsed time. Red alert background. 消耗速度超过时间进度，触发红色警报背景。
+  - 🌓 **Impulse** (脉冲推进) — Right on schedule. Steady cruising. 消耗与时间进度同步，平稳巡航。
+  - 🌔 **Moonwalk** (月球漫步) — Conserving fuel, well below pace. 节省燃料，远低于预期消耗。
 - **Deep Space Insights | 深空数据探针**
-  Hover to reveal a precisely curated breakdown of your weekly and short-term orbital limits.
-  悬浮触发详尽的数据面板，掌握长周期与短周期限额的每一处细节。
+  Hover to reveal fuel status, refuel times, and warp factor deviations.
+  悬浮触发燃料主题数据面板，掌握长周期与短周期限额的每一处细节。
 - **Thruster Controls | 推进器微调**
   - `Kimi: Refresh Usage` — Instant telemetry sync. (立即同步雷达数据)
-  - `Kimi: Show Details` — Deep dive into stats. (查看深空数据面板)
+  - `Kimi: Show Details` — Deep dive into stats with absolute reset times. (查看深空数据面板，含精确重置时间)
 
 ---
 
 ### 🚀 Launch Sequence | 发射序列
 
-1.  **Dock** the extension from the VS Code Marketplace. (从商店安装扩展)
-2.  **Calibrate** your API Key in Settings > `kimiUsage.apiKey`, or via the `.env` module. (配置你的 API 密钥)
+1.  **Dock** the extension from the VS Code: Marketplace. (从商店安装扩展)
+2.  **Calibrate** your API Key in Settings > `kimiCodeUsage.apiKey`, or via the `.env` module. (配置你的 API 密钥)
 3.  **Liftoff!** Watch your quota manifest in the status bar. (点火起飞！在状态栏实时感知资源消耗)
 
 ---
@@ -76,9 +85,8 @@ In the vastness of the code universe, your creative flow shouldn't be pulled dow
 | :--- | :--- | :--- |
 | `apiKey` | Your Kimi API secret / 核心密钥 | `KIMI_CODING_API_KEY` |
 | `baseUrl` | API base URL / 接口基站 | `Kimi Coding V1` |
-| `refreshInterval` | Auto-sync minutes / 雷达刷新间隔 | `5` |
-| `warnPercent` | Yellow caution threshold / 黄色平流层预警 | `30%` |
-| `criticalPercent` | Red alert threshold / 红色大气层告警 | `10%` |
+| `refreshIntervalMinutes` | Auto-sync minutes / 雷达刷新间隔 | `5` |
+| `showPaceIndicator` | Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针 | `true` |
 
 ---
 
@@ -93,4 +101,3 @@ Engineered with ❤️ by **Haining Yu**. This extension is a piece of digital a
 <p align="center">
   <strong>See you on the dark side of the moon.</strong>
 </p>
-
