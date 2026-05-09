@@ -203,16 +203,54 @@ async function refresh() {
       return;
     }
 
-    const minPercent = Math.min(...items.map(i => i.percent_left));
-    const emoji = minPercent <= 10 ? '$(error)' : minPercent <= 30 ? '$(warning)' : '$(chip)';
+    // Find weekly item for pace calculation
+    const weeklyItem = items.find(i => {
+      const lower = i.label.toLowerCase();
+      return lower.includes('weekly') || lower.includes('week') || lower.includes('周');
+    });
+
+    const showPace = cfg.get<boolean>('showPaceIndicator', true);
+    let pace: PaceState | null = null;
+    if (weeklyItem && showPace) {
+      pace = computePace(weeklyItem);
+    }
+
+    // Build prefix with moon emoji + state
+    const moonEmoji = pace
+      ? (pace.state === 'warp' ? '🌒' : pace.state === 'impulse' ? '🌓' : '🌔')
+      : '🌓';
+    const stateName = pace
+      ? t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk')
+      : t('Impulse');
+    const bar = pace ? formatPaceBar(pace.ratio) : '▰▰▰▱▱';
+    const ratioText = pace ? `${pace.ratio.toFixed(1)}x` : '';
+
+    const prefix = `${moonEmoji} Kimi ${stateName} ${bar} ${ratioText}`.trim();
+
     const parts = items.map(i => `${shortLabel(i.label)}:${i.percent_left.toFixed(0)}%`);
-    statusBarItem.text = `${emoji} Kimi ${parts.join(' ')}`;
+    statusBarItem.text = `${prefix} ${parts.join(' ')}`;
 
-    const lines = items.map(
-      i => `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% ${t('left')})${i.reset_hint ? ' — ' + i.reset_hint : ''}`
-    );
-    statusBarItem.tooltip = lines.join('\n');
+    // Tooltip with pace details
+    const tooltipLines: string[] = [];
+    for (const i of items) {
+      let line = `${i.label}: ${i.used.toLocaleString()}/${i.limit.toLocaleString()} (${i.percent_left.toFixed(0)}% ${t('left')})`;
+      if (i.reset_hint) {
+        line += ' — ' + i.reset_hint;
+      }
+      tooltipLines.push(line);
 
+      // Add pace detail for weekly item
+      if (i === weeklyItem && pace) {
+        const elapsedRatio = Math.min(1, (WEEKLY_WINDOW_SECONDS - (i.reset_seconds ?? 0)) / WEEKLY_WINDOW_SECONDS);
+        const expected = elapsedRatio * 100;
+        const actual = ((i.used / i.limit) * 100);
+        tooltipLines.push(`  ${formatPaceBar(pace.ratio)} Pace ${pace.ratio.toFixed(1)}x — ${stateName}`);
+        tooltipLines.push(`  ${t('Expected')} ${expected.toFixed(1)}%  ·  ${t('Actual')} ${actual.toFixed(1)}%`);
+      }
+    }
+    statusBarItem.tooltip = tooltipLines.join('\n');
+
+    const minPercent = Math.min(...items.map(i => i.percent_left));
     if (minPercent <= cfg.get<number>('criticalPercent', 10)) {
       statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     } else if (minPercent <= cfg.get<number>('warnPercent', 30)) {
