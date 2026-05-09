@@ -486,10 +486,38 @@ async function showDetails() {
   try {
     const data = await fetchUsage(baseUrl, apiKey);
     const items = parsePayload(data);
-    const picks = items.map((i) => ({
-      label: `${i.label}: ${i.percent_left.toFixed(0)}% ${t('left')}`,
-      description: `${i.used.toLocaleString()} / ${i.limit.toLocaleString()}${i.reset_hint ? '  ·  ' + i.reset_hint : ''}`,
-    }));
+
+    const picks = items.map((i) => {
+      let description = `${i.used.toLocaleString()} / ${i.limit.toLocaleString()}`;
+
+      // Try to show absolute reset time
+      const raw = data?.usage || data?.limits?.find((l: any) => {
+        const detail = l?.detail || l;
+        return (detail?.name || detail?.title || '') === i.label;
+      });
+      const detailData = raw?.detail || raw;
+      if (detailData) {
+        for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
+          const v = detailData[key];
+          if (v) {
+            const formatted = formatResetTimeAbsolute(String(v));
+            const isZh = translator.t('left') === '剩余';
+            if (isZh) {
+              description += `  ·  ${formatted.absolute}重置 · ${formatted.relative}`;
+            } else {
+              description += `  ·  Resets ${formatted.absolute} · ${formatted.relative}`;
+            }
+            break;
+          }
+        }
+      }
+
+      return {
+        label: `${i.label}: ${i.percent_left.toFixed(0)}% ${t('left')}`,
+        description,
+      };
+    });
+
     vscode.window.showQuickPick(picks, { placeHolder: t('Kimi API Usage Details') });
   } catch (err) {
     vscode.window.showErrorMessage(t('Kimi usage fetch failed: {0}', String(err)));
