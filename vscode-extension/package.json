@@ -43,6 +43,11 @@
           "default": 5,
           "description": "Refresh interval in minutes / 自动刷新频率 (分钟)"
         },
+        "kimiCodeUsage.showPaceIndicator": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针（曲率/脉冲/月球漫步）"
+        },
         "kimiCodeUsage.warnPercent": {
           "type": "number",
           "default": 30,
