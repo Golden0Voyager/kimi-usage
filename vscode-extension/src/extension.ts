@@ -337,6 +337,25 @@ function toRow(data: any, defaultLabel: string): UsageItem | null {
     const s = toInt(data[key]);
     if (s != null) { reset_seconds = s; break; }
   }
+  if (reset_seconds == null) {
+    for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
+      const v = data[key];
+      if (v) {
+        try {
+          let iso = String(v);
+          if (iso.includes('.') && iso.endsWith('Z')) {
+            const [base, frac] = iso.slice(0, -1).split('.');
+            iso = `${base}.${frac.slice(0, 6)}Z`;
+          }
+          const dt = new Date(iso.replace('Z', '+00:00'));
+          const sec = Math.floor((dt.getTime() - Date.now()) / 1000);
+          if (sec > 0) { reset_seconds = sec; break; }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+  }
 
   return {
     label: String(data.name || data.title || defaultLabel),
