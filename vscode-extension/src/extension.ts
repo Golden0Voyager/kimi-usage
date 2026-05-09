@@ -223,7 +223,7 @@ async function refresh() {
       ? t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk')
       : t('Impulse');
     const bar = pace ? formatPaceBar(pace.ratio) : '▰▰▰▱▱';
-    const ratioText = pace ? `${pace.ratio.toFixed(1)}x` : '';
+    const ratioText = pace ? `${pace.ratio.toFixed(1)}x` : (showPace ? '1.0x' : '');
 
     const prefix = `${moonEmoji} Kimi ${stateName} ${bar} ${ratioText}`.trim();
 
@@ -505,7 +505,7 @@ async function showDetails() {
             if (isZh) {
               description += `  ·  ${formatted.absolute}重置 · ${formatted.relative}`;
             } else {
-              description += `  ·  Resets ${formatted.absolute} · ${formatted.relative}`;
+              description += `  ·  Next reset: ${formatted.absolute} (in ${formatted.relative})`;
             }
             break;
           }
