@@ -21,7 +21,7 @@ Only the **weekly** limit gets a pace indicator. Short windows (e.g. 5h) have no
 
 | Pace Ratio | State (EN) | State (CN) | Moon Emoji | ASCII Bar | Background Color |
 |---|---|---|---|---|---|
-| ≥ 1.1x | **Warp** | 曲率加速 | 🌒 | ▰▰▰▰▱ or ▰▰▰▰▰ | Yellow → Red (see §6) |
+| ≥ 1.1x | **Warp** | 曲率加速 | 🌒 | ▰▰▰▰▱ or ▰▰▰▰▰ | Unchanged (pace does not affect bg) |
 | 0.9x – 1.1x | **Impulse** | 脉冲推进 | 🌓 | ▰▰▰▱▱ | Unchanged |
 | ≤ 0.9x | **Moonwalk** | 月球漫步 | 🌔 | ▰▰▱▱▱ or ▰▱▱▱▱ | Unchanged |
 
@@ -162,3 +162,7 @@ Estimated change: **~80 lines**, no new files.
 "Expected {0}%  ·  Actual {1}%": "应耗 {0}%  ·  实耗 {1}%"
 "Resets {0} · {1} left": "{0} 重置 · 剩 {1}"
 ```
+
+## 13. Implementation Constraint
+
+- **Local testing only**: After implementation, test locally in VS Code: (F5 → Extension Development Host). Do **not** package or publish (no `vsce package` / `vsce publish`) until explicitly requested.
