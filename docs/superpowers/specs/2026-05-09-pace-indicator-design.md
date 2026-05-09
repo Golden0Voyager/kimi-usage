@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Add a **pace indicator** to the VS Code: extension status bar that compares actual weekly usage against expected usage based on elapsed time. Think of it as a spaceship throttle gauge: if you're burning through your weekly quota faster than the calendar, you're in Warp; if you're right on schedule, you're cruising at Impulse; if you're conserving, you're Moonwalking.
+Add a **pace indicator** to the VS Code: extension status bar that compares actual usage against expected usage based on elapsed time. Think of it as a spaceship throttle gauge: if you're burning through your quota faster than the calendar, you're in **Overload**; if you're right on schedule, you're cruising at **Impulse**; if you're conserving, you're **Moonwalking**.
 
 **Scope**: VS Code: extension only. This is a pure UI/UX enhancement to the existing status bar + QuickPick flow.
 
@@ -15,83 +15,87 @@ pace ratio = actual_used_percent / elapsed_time_percent
 - **elapsed_time_percent** = `seconds_elapsed_in_window / total_window_seconds`
 - **actual_used_percent** = `used / limit`
 
-Only the **weekly** limit gets a pace indicator. Short windows (e.g. 5h) have no meaningful "cruise vs overspeed" semantics and are excluded.
+All limits get a pace indicator (weekly, 5h, monthly). Window duration is inferred from the limit label.
 
 ## 3. Three-State Model
 
-| Pace Ratio | State (EN) | State (CN) | Moon Emoji | ASCII Bar | Background Color |
-|---|---|---|---|---|---|
-| ≥ 1.1x | **Warp** | 曲率加速 | 🌒 | ▰▰▰▰▱ or ▰▰▰▰▰ | Unchanged (pace does not affect bg) |
-| 0.9x – 1.1x | **Impulse** | 脉冲推进 | 🌓 | ▰▰▰▱▱ | Unchanged |
-| ≤ 0.9x | **Moonwalk** | 月球漫步 | 🌔 | ▰▰▱▱▱ or ▰▱▱▱▱ | Unchanged |
+| Pace Ratio | State (EN) | State (CN) | Moon Emoji | ASCII Bar | Status Bar Icon | Background Color |
+|---|---|---|---|---|---|---|
+| ≥ 1.1x | **Overload** | 曲率加速 | 🌒 | ▰▰▰ | `$(warning)` | **Red** (`statusBarItem.errorBackground`) |
+| 0.9x – 1.1x | **Impulse** | 脉冲推进 | 🌓 | ▰▰▱ | `$(dashboard)` | Unchanged |
+| ≤ 0.9x | **Moonwalk** | 月球漫步 | 🌔 | ▰▱▱ | `$(debug-step-over)` | Unchanged |
 
 ### 3.1 ASCII Bar Fill Logic
 
 ```
-> 1.5x   → 5 bars (▰▰▰▰▰)
-1.1–1.5x → 4 bars (▰▰▰▰▱)
-0.9–1.1x → 3 bars (▰▰▰▱▱)  ← cruise baseline
-0.5–0.9x → 2 bars (▰▰▱▱▱)
-< 0.5x   → 1 bar  (▰▱▱▱▱)
+≥ 1.1x   → 3 bars (▰▰▰)  // Overload
+0.9–1.1x → 2 bars (▰▰▱)  // Impulse (cruise baseline)
+≤ 0.9x   → 1 bar  (▰▱▱)  // Moonwalk
 ```
 
 ### 3.2 Moon Phase Narrative
 
-The moon emoji follows a **waxing** progression: the slower you go, the fuller the moon. This creates a poetic visual arc from a sliver of urgency (Warp) to the calm fullness of leisure (Moonwalk).
+The moon emoji follows a **waxing** progression: the slower you go, the fuller the moon. This creates a poetic visual arc from a sliver of urgency (Overload) to the calm fullness of leisure (Moonwalk).
 
 ## 4. Status Bar Format
 
 ### 4.1 English Mode
 
 ```
-🌒 Kimi Warp     ▰▰▰▰▱  W:42%  5H:99%
-🌓 Kimi Impulse  ▰▰▰▱▱  W:25%  5H:99%
-🌔 Kimi Moonwalk ▰▱▱▱▱  W:8%   5H:99%
+🌒 ▰▰▰  W:18%  5H:18%  > $(warning) Overload
+🌓 ▰▰▱  W:50%  5H:50%  > $(dashboard) Impulse
+🌔 ▰▱▱  W:80%  5H:80%  > $(debug-step-over) Moonwalk
 ```
 
 ### 4.2 Chinese Mode
 
 ```
-🌒 Kimi 曲率加速  ▰▰▰▰▱  周:42%  5时:99%
-🌓 Kimi 脉冲推进  ▰▰▰▱▱  周:25%  5时:99%
-🌔 Kimi 月球漫步  ▰▱▱▱▱  周:8%   5时:99%
+🌒 ▰▰▱  周:18%  5时:18%  > $(warning) 曲率加速
+🌓 ▰▰▱  周:50%  5时:50%  > $(dashboard) 脉冲推进
+🌔 ▰▱▱  周:80%  5时:80%  > $(debug-step-over) 月球漫步
 ```
 
 ### 4.3 Layout Rules
 
-- **Order**: `🌒 Kimi <State> <ASCII-Bar> <Ratio> W:xx% 5H:xx%`
-- **Separator between Kimi and State**: single space (no dot, no pipe)
-- The pace indicator (`<State> <ASCII-Bar> <Ratio>`) sits **before** the percentage values
-- Error states retain icons: `$(warning) no key`, `$(sync~spin) err`
+- **Order**: `<MoonEmoji> <Bar> <Percentages> > <Icon> <StateName>`
+- **Percentages first**: all usage items shown as `ShortLabel:xx%`
+- **Pace suffix last**: state name with codicon appended after `>`
+- **No ratio number in status bar**: the exact `1.4x` is shown only in hover/QuickPick
+- **Error states retain icons**: `$(warning) Major Tom?`, `$(sync~spin) Starman...`
 
 ## 5. Hover Tooltip
 
 ```
-Weekly limit: 4,200 / 10,000 (42% left)
-  🌒 Pace 1.4x — 曲率加速 Warp
-  Expected 35.7%  ·  Actual 57.0%
-  🛸 Resets Thu 04:23 · 5d 3h left
-5h limit: 9,900 / 10,000 (99% left)
-  Resets today 04:35 · 4h 12m left
+<center>每周：剩余燃料：3d 17h left | 重新装填：Today 16:22</center>
+<center>每5小时：剩余燃料：2h 30m left | 重新装填：Today 16:22</center>
+<center>曲率：每周 -26.33% | 每5小时 -60.00%</center>
 ```
+
+- **Fuel theme**: "剩余燃料" / "Fuel remaining" for time left, "重新装填" / "Refuel" for reset time
+- **Pace merged to one line**: all quota deviations displayed together, separated by `|`
+- **No state name in hover pace line**: deviation percentages alone are sufficient
+- **HTML centering**: uses `<center>` tags with `supportHtml = true`
 
 ## 6. QuickPick Detail View
 
-Triggered by clicking the status bar item. Shows absolute reset time + remaining duration.
+Triggered by clicking the status bar item.
 
 ```
-🌒 Weekly limit: 42% left      4,200 / 10,000  ·  Resets Thu 04:23 · 5d 3h left
-   5h limit:     99% left      9,900 / 10,000  ·  Resets today 04:35 · 4h 12m left
+Weekly: 65% left    [Warp Factor: -26.33% > Moonwalk]    Resets Wed 16:22 (in 3d 17h)
+5 Hours: 59% left   [Warp Factor: -30.43% > Moonwalk]    Resets Wed 16:22 (in 3d 17h)
 ```
+
+- **Beautified labels**: `Weekly limit` → `Weekly`, `5h limit` → `5 Hours`
+- **Pace info appended**: `[Warp Factor: -26.33% > Moonwalk]` shown for every quota item
+- **Reset time in label**: merged into the main label (not description) for consistent font size
 
 ### 6.1 Reset Time Format
 
 | Scenario | Chinese | English |
 |---|---|---|
-| ≥ 24 hours to reset | `周四 04:23 重置 · 剩 5d 3h` | `Resets Thu 04:23 · 5d 3h left` |
-| < 24 hours to reset | `今天 04:35 重置 · 剩 4h 12m` | `Resets today 04:35 · 4h 12m left` |
+| ≥ 24 hours to reset | `剩 3天 17时 · 周四 04:23` | `3d 17h left · Reset: Thu 04:23` |
+| < 24 hours to reset | `剩 4时 12分 · 今天 04:35` | `4h 12m left · Reset: Today 04:35` |
 | Already expired | `已重置` | `reset` |
-| No reset time from API | (omitted) | (omitted) |
 
 - Uses **24-hour format** (no AM/PM ambiguity)
 - Uses **local timezone** (JavaScript `Date` default behavior)
@@ -99,15 +103,17 @@ Triggered by clicking the status bar item. Shows absolute reset time + remaining
 
 ## 7. Background Color Logic
 
-Background color is **unchanged** from the existing behavior. Pace indicator does not trigger background color changes.
+Background color is **pace-driven**, not quota-driven.
 
 | Signal | Trigger | Background |
 |---|---|---|
-| Quota critical | `percent_left ≤ criticalPercent` (default 10%) | Red (`statusBarItem.errorBackground`) |
-| Quota warning | `percent_left ≤ warnPercent` (default 30%) | Yellow (`statusBarItem.warningBackground`) |
-| Pace states | Any ratio | **No effect** |
+| Overload | `pace.state === 'warp'` | **Red** (`statusBarItem.errorBackground`) |
+| Moonwalk | `pace.state === 'moonwalk'` | **Light green** (`kimiCodeUsage.moonwalkBackground`) |
+| Impulse | Any other ratio | **None** (undefined) |
 
-The pace indicator is a purely visual, non-intrusive signal. Background color remains strictly quota-driven.
+The old quota-based background color logic (critical/warn percent thresholds) has been removed. The pace indicator is now the primary visual alert signal.
+
+The Moonwalk color is contributed as a custom theme color with defaults `#d4edda` (light) and `#1b4332` (dark / high-contrast) so it remains readable across themes.
 
 ## 8. Configuration
 
@@ -117,7 +123,7 @@ Single toggle to disable the feature:
 "kimiCodeUsage.showPaceIndicator": {
   "type": "boolean",
   "default": true,
-  "description": "Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针（曲率/脉冲/月球漫步）"
+  "description": "Show pace indicator (Overload/Impulse/Moonwalk) / 显示速度指针（曲率/脉冲/月球漫步）"
 }
 ```
 
@@ -128,39 +134,54 @@ Threshold values (0.9 / 1.1) and bar fill logic are **not configurable** in v1. 
 - Desktop notifications / popups on state change
 - Configurable pace thresholds
 - Historical trend charts or daily/weekly reports
-- Pace indicator for non-weekly windows (e.g. 5h)
 
 ## 10. Edge Cases
 
 | Scenario | Handling |
 |---|---|
 | API returns no `reset_in` / `reset_at` | Skip pace display entirely; show only `W:42% 5H:99%` |
-| Window just started (< 1 hour elapsed) | Skip pace judgment; display ▰▰▰▱▱ (cruise placeholder) |
+| Window just started (< 1 hour elapsed) | Skip pace judgment; display ▰▰▱ (Impulse placeholder) |
 | `elapsed_time ≥ total_window` | Calculate normally; cap ratio display at 5.0x |
 | `limit = 0` or `used = 0` | Skip pace indicator for this item |
 | `showPaceIndicator = false` | Revert to pre-feature status bar format |
+| Weekly and 5h have different pace states | Hover shows both deviations; status bar icon follows **weekly** state |
 
 ## 11. Code Structure
 
-Keep changes in the existing single file `vscode-extension/src/extension.ts`:
+Changes in `vscode-extension/src/extension.ts`:
 
 1. **New constant**: `WEEKLY_WINDOW_SECONDS = 7 * 24 * 3600`
-2. **New pure function**: `computePace(item: UsageItem): PaceState | null`
-3. **Modified `refresh()`**: Assemble pace text and prepend to status bar string
-4. **Modified `formatResetTime()`**: Return absolute time + relative duration
-5. **New l10n strings**: See §12
+2. **New function**: `getWindowSeconds(label: string): number` — dynamic window detection
+3. **Modified `computePace()`**: accepts `windowSeconds` parameter
+4. **Modified `refresh()`**: assemble pace text with codicons + background color
+5. **Modified `showDetails()`**: beautified labels + per-item pace
+6. **Modified hover builder**: fuel theme + merged pace line
+7. **New l10n strings**: See §12
 
-Estimated change: **~80 lines**, no new files.
+Estimated change: **~120 lines**.
 
 ## 12. i18n Strings
 
-```
-"Warp": "曲率加速"
-"Impulse": "脉冲推进"
-"Moonwalk": "月球漫步"
-"Pace {0}x — {1}": "速度比 {0}x — {1}"
-"Expected {0}%  ·  Actual {1}%": "应耗 {0}%  ·  实耗 {1}%"
-"Resets {0} · {1} left": "{0} 重置 · 剩 {1}"
+```json
+// English (bundle.l10n.json)
+{
+  "Overload": "Overload",
+  "Impulse": "Impulse",
+  "Moonwalk": "Moonwalk",
+  "left": "left"
+}
+
+// Chinese (bundle.l10n.zh-cn.json)
+{
+  "Overload": "曲率加速",
+  "Impulse": "脉冲推进",
+  "Moonwalk": "月球漫步",
+  "left": "剩余",
+  "Kimi API key not configured.": "未配置 Kimi API 密钥。",
+  "Kimi usage fetch failed: {0}": "获取 Kimi 用量失败: {0}",
+  "Kimi API Usage Details": "Kimi API 用量详情",
+  "No usage data": "无用量数据"
+}
 ```
 
 ## 13. Implementation Constraint
