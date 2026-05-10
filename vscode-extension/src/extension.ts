@@ -19,7 +19,50 @@ interface PaceState {
   state: 'warp' | 'impulse' | 'moonwalk';
 }
 
+interface PacePresentation {
+  label: string;
+  icon: string;
+}
+
+interface ThresholdSettings {
+  weekly: number;
+  fiveHours: number;
+}
+
+interface ErrorPresentation {
+  text: string;
+  tooltip: string;
+  isWarning: boolean;
+}
+
 const WEEKLY_WINDOW_SECONDS = 7 * 24 * 3600;
+const MIN_REFRESH_MINUTES = 1;
+const DEFAULT_LOW_THRESHOLD = 30;
+const ICON_NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+type LanguageChoice = 'Auto' | 'English' | 'Chinese';
+type WindowType = 'weekly' | 'fiveHours' | 'monthly' | 'other';
+
+const PACE_CONFIG = {
+  warp: {
+    labelKey: 'Warp',
+    labelSetting: 'paceLabels.overload',
+    iconSetting: 'paceIcons.overload',
+    defaultIcon: 'warning',
+  },
+  impulse: {
+    labelKey: 'Impulse',
+    labelSetting: 'paceLabels.impulse',
+    iconSetting: 'paceIcons.impulse',
+    defaultIcon: 'dashboard',
+  },
+  moonwalk: {
+    labelKey: 'Moonwalk',
+    labelSetting: 'paceLabels.moonwalk',
+    iconSetting: 'paceIcons.moonwalk',
+    defaultIcon: 'coffee',
+  },
+} as const;
 
 function computePace(item: UsageItem, windowSeconds: number): PaceState | null {
   if (!item.reset_seconds || item.reset_seconds <= 0) return null;
@@ -42,22 +85,26 @@ function computePace(item: UsageItem, windowSeconds: number): PaceState | null {
   return { ratio, state };
 }
 
-function getWindowSeconds(label: string): number {
+function detectWindowType(label: string): WindowType {
   const lower = label.toLowerCase();
-  if (lower.includes('5h') || lower.includes('5 hour') || lower.includes('5小时')) {
-    return 5 * 3600;
-  }
-  if (lower.includes('month') || lower.includes('monthly') || lower.includes('月')) {
-    return 30 * 24 * 3600;
-  }
+  if (lower.includes('weekly') || lower.includes('week') || lower.includes('周')) return 'weekly';
+  if (lower.includes('5h') || lower.includes('5 hour') || lower.includes('5小时')) return 'fiveHours';
+  if (lower.includes('month') || lower.includes('monthly') || lower.includes('月')) return 'monthly';
+  return 'other';
+}
+
+function getWindowSeconds(label: string): number {
+  const windowType = detectWindowType(label);
+  if (windowType === 'fiveHours') return 5 * 3600;
+  if (windowType === 'monthly') return 30 * 24 * 3600;
   return WEEKLY_WINDOW_SECONDS;
 }
 
 function formatPaceBar(ratio: number): string {
   let filled: number;
-  if (ratio >= 1.1) filled = 3;      // Warp: ▰▰▰
-  else if (ratio >= 0.9) filled = 2;  // Impulse: ▰▰▱
-  else filled = 1;                    // Moonwalk: ▰▱▱
+  if (ratio >= 1.1) filled = 3;
+  else if (ratio >= 0.9) filled = 2;
+  else filled = 1;
   return '▰'.repeat(filled) + '▱'.repeat(3 - filled);
 }
 
@@ -67,7 +114,8 @@ let translator: Translator;
 
 class Translator {
   private bundle: Record<string, string> = {};
-  private useNative: boolean = true;
+  private useNative = true;
+  private languageChoice: LanguageChoice = 'Auto';
 
   constructor(context: vscode.ExtensionContext) {
     this.update(context);
@@ -75,27 +123,32 @@ class Translator {
 
   update(context: vscode.ExtensionContext) {
     const config = vscode.workspace.getConfiguration('kimiCodeUsage');
-    const lang = config.get<string>('language', 'Auto');
+    const lang = config.get<LanguageChoice>('language', 'Auto');
+    this.languageChoice = lang;
 
     if (lang === 'Auto') {
       this.useNative = true;
       this.bundle = {};
-    } else {
-      this.useNative = false;
-      const fileName = lang === 'Chinese' ? 'bundle.l10n.zh-cn.json' : 'bundle.l10n.json';
-      const filePath = path.join(context.extensionPath, 'l10n', fileName);
-      try {
-        if (fs.existsSync(filePath)) {
-          this.bundle = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        }
-      } catch (e) {
-        console.error('Failed to load l10n bundle', e);
-        this.useNative = true;
+      return;
+    }
+
+    this.useNative = false;
+    const fileName = lang === 'Chinese' ? 'bundle.l10n.zh-cn.json' : 'bundle.l10n.json';
+    const filePath = path.join(context.extensionPath, 'l10n', fileName);
+    try {
+      if (fs.existsSync(filePath)) {
+        this.bundle = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      } else {
+        this.bundle = {};
       }
+    } catch (e) {
+      console.error('Failed to load l10n bundle', e);
+      this.useNative = true;
+      this.bundle = {};
     }
   }
 
-  t(message: string, ...args: any[]): string {
+  t(message: string, ...args: unknown[]): string {
     let str = this.useNative ? vscode.l10n.t(message) : (this.bundle[message] || message);
     if (args.length > 0) {
       args.forEach((arg, i) => {
@@ -104,11 +157,17 @@ class Translator {
     }
     return str;
   }
+
+  isZh(): boolean {
+    if (this.languageChoice === 'Chinese') return true;
+    if (this.languageChoice === 'English') return false;
+    return vscode.env.language.toLowerCase().startsWith('zh');
+  }
 }
 
 export function activate(context: vscode.ExtensionContext) {
   translator = new Translator(context);
-  
+
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.command = 'kimiCodeUsage.showDetails';
   statusBarItem.show();
@@ -116,7 +175,6 @@ export function activate(context: vscode.ExtensionContext) {
   const refreshCmd = vscode.commands.registerCommand('kimiCodeUsage.refresh', refresh);
   const detailsCmd = vscode.commands.registerCommand('kimiCodeUsage.showDetails', showDetails);
 
-  // Listen for configuration changes
   const configChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
     if (e.affectsConfiguration('kimiCodeUsage')) {
       if (e.affectsConfiguration('kimiCodeUsage.language')) {
@@ -133,23 +191,64 @@ export function activate(context: vscode.ExtensionContext) {
   restartInterval();
 }
 
-function t(message: string, ...args: any[]): string {
+function t(message: string, ...args: unknown[]): string {
   return translator.t(message, ...args);
 }
 
-function restartInterval() {
-  if (intervalId) {
-    clearInterval(intervalId);
+function sanitizePercentThreshold(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  const numeric = value as number;
+  return Math.max(0, Math.min(100, numeric));
+}
+
+function readThresholdSettings(cfg: vscode.WorkspaceConfiguration): ThresholdSettings {
+  return {
+    weekly: sanitizePercentThreshold(cfg.get<number>('weeklyLowThresholdPercent', DEFAULT_LOW_THRESHOLD), DEFAULT_LOW_THRESHOLD),
+    fiveHours: sanitizePercentThreshold(cfg.get<number>('fiveHourLowThresholdPercent', DEFAULT_LOW_THRESHOLD), DEFAULT_LOW_THRESHOLD),
+  };
+}
+
+function normalizeIconName(raw: string, fallback: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return fallback;
+
+  let name = trimmed;
+  if (name.startsWith('$(') && name.endsWith(')')) {
+    name = name.slice(2, -1).trim();
   }
+
+  return ICON_NAME_PATTERN.test(name) ? name : fallback;
+}
+
+function getPacePresentation(cfg: vscode.WorkspaceConfiguration, state: PaceState['state']): PacePresentation {
+  const config = PACE_CONFIG[state];
+  const defaultLabel = t(config.labelKey);
+  const labelObject = cfg.get<Record<string, string>>('paceLabels', {});
+  const fromObject = typeof labelObject?.[state] === 'string' ? labelObject[state] : '';
+  const fromLegacy = cfg.get<string>(config.labelSetting, '');
+  const configuredLabel = (fromObject || fromLegacy || defaultLabel).trim();
+  const label = configuredLabel || defaultLabel;
+
+  const iconObject = cfg.get<Record<string, string>>('paceIcons', {});
+  const iconFromObject = typeof iconObject?.[state] === 'string' ? iconObject[state] : '';
+  const iconFromLegacy = cfg.get<string>(config.iconSetting, '');
+  const configuredIcon = iconFromObject || iconFromLegacy || config.defaultIcon;
+  const icon = normalizeIconName(configuredIcon, config.defaultIcon);
+
+  return { label, icon };
+}
+
+function restartInterval() {
+  if (intervalId) clearInterval(intervalId);
+
   const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
-  const minutes = cfg.get<number>('refreshIntervalMinutes', 5);
-  intervalId = setInterval(refresh, minutes * 60 * 1000);
+  const configured = cfg.get<number>('refreshIntervalMinutes', 5);
+  const safeMinutes = Number.isFinite(configured) ? Math.max(MIN_REFRESH_MINUTES, configured) : 5;
+  intervalId = setInterval(refresh, safeMinutes * 60 * 1000);
 }
 
 export function deactivate() {
-  if (intervalId) {
-    clearInterval(intervalId);
-  }
+  if (intervalId) clearInterval(intervalId);
 }
 
 async function resolveApiKey(): Promise<string> {
@@ -157,7 +256,6 @@ async function resolveApiKey(): Promise<string> {
   const configuredKey = cfg.get<string>('apiKey', '');
   if (configuredKey) return configuredKey;
 
-  // Search workspace .env files
   if (vscode.workspace.workspaceFolders) {
     for (const folder of vscode.workspace.workspaceFolders) {
       const envPath = vscode.Uri.joinPath(folder.uri, '.env');
@@ -169,35 +267,140 @@ async function resolveApiKey(): Promise<string> {
         for (const line of lines) {
           const match = line.match(/^\s*(KIMI_CODING_API_KEY|KIMI_API_KEY)\s*=\s*['"]?([^'"\s]+)['"]?/);
           if (match) {
-            if (match[1] === 'KIMI_CODING_API_KEY') {
-              return match[2]; // Highest priority in .env
-            } else if (!fallbackKey) {
-              fallbackKey = match[2];
-            }
+            if (match[1] === 'KIMI_CODING_API_KEY') return match[2];
+            if (!fallbackKey) fallbackKey = match[2];
           }
         }
         if (fallbackKey) return fallbackKey;
-      } catch (e) {
-        // .env not found or unreadable in this folder, continue
+      } catch {
+        // Continue when .env is absent or unreadable.
       }
     }
   }
 
-  // Check process.env (fallback)
   if (process.env.KIMI_CODING_API_KEY) return process.env.KIMI_CODING_API_KEY;
   if (process.env.KIMI_API_KEY) return process.env.KIMI_API_KEY;
-
   return '';
+}
+
+function localizedLimitName(label: string): string {
+  const type = detectWindowType(label);
+  const isZh = translator.isZh();
+
+  if (type === 'weekly') return isZh ? t('Every Week') : t('Weekly');
+  if (type === 'fiveHours') return isZh ? t('Every 5 Hours') : t('5 Hours');
+  if (type === 'monthly') return isZh ? t('Every Month') : t('Monthly');
+  return label;
+}
+
+function findWindowItem(items: UsageItem[], windowType: WindowType): UsageItem | undefined {
+  return items.find((item) => detectWindowType(item.label) === windowType);
+}
+
+function isLowRemaining(item: UsageItem | undefined, thresholdPercent: number): boolean {
+  if (!item) return false;
+  return item.percent_left < thresholdPercent;
+}
+
+function pushSection(lines: string[], title: string, entries: string[]) {
+  if (entries.length === 0) return;
+  if (lines.length > 0) lines.push('');
+  lines.push(`**${title}**`);
+  lines.push(...entries.map((entry) => `- ${entry}`));
+}
+
+function isLinkIssue(err: unknown): boolean {
+  const raw = String(err ?? '').toLowerCase();
+  return raw.includes('invalid url')
+    || raw.includes('timeout')
+    || raw.includes('enotfound')
+    || raw.includes('econnreset')
+    || raw.includes('network')
+    || raw.includes('socket');
+}
+
+function buildErrorPresentation(err: unknown): ErrorPresentation {
+  const raw = String(err ?? '');
+  const lower = raw.toLowerCase();
+
+  if (lower.includes('timeout')) {
+    return {
+      text: `$(watch) ${t('Ground Control to Major Kimi!')}`,
+      tooltip: `${t('Ground Control to Major Kimi!')} ${t('Check baseUrl and network link.')}`,
+      isWarning: false,
+    };
+  }
+
+  if (lower.includes('http 401') || lower.includes('http 403')) {
+    return {
+      text: `$(lock) ${t('Auth Failed Short')}`,
+      tooltip: `${t('Authentication failed. Please check API key and permissions.')}: ${raw}`,
+      isWarning: true,
+    };
+  }
+
+  if (lower.includes('http 429')) {
+    return {
+      text: `$(warning) ${t('Rate Limited Short')}`,
+      tooltip: `${t('Rate limit exceeded. Please wait and retry.')}: ${raw}`,
+      isWarning: true,
+    };
+  }
+
+  if (lower.includes('http 5')) {
+    return {
+      text: `$(server-process) ${t('Server Error Short')}`,
+      tooltip: `${t('Server error from Kimi API. Please retry shortly.')}: ${raw.slice(0, 200)}`,
+      isWarning: false,
+    };
+  }
+
+  if (lower.includes('enotfound') || lower.includes('econnreset') || lower.includes('network') || lower.includes('socket')) {
+    return {
+      text: `$(broadcast) ${t('Ground Control to Major Kimi!')}`,
+      tooltip: `${t('Ground Control to Major Kimi!')} ${t('Check baseUrl and network link.')}`,
+      isWarning: false,
+    };
+  }
+
+  if (lower.includes('invalid url')) {
+    return {
+      text: `$(link-external) ${t('Ground Control to Major Kimi!')}`,
+      tooltip: `${t('Ground Control to Major Kimi!')} ${t('Check baseUrl and network link.')}`,
+      isWarning: false,
+    };
+  }
+
+  return {
+    text: `$(error) ${t('Request Failed Short')}`,
+    tooltip: `${t('Request Failed Short')}: ${raw.slice(0, 200)}`,
+    isWarning: false,
+  };
 }
 
 async function refresh() {
   const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
   const apiKey = await resolveApiKey();
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
+  const thresholds = readThresholdSettings(cfg);
 
   if (!apiKey) {
-    statusBarItem.text = `$(warning) Major Tom?`;
-    statusBarItem.tooltip = 'Ground Control to Major Tom... comms link severed. Set KIMI_API_KEY.';
+    statusBarItem.text = `$(key) ${t('API Key Missing')}`;
+    const missingKeyTooltip = new vscode.MarkdownString(
+      [
+        `**${t('Ground Control to Major Kimi!')}**`,
+        `${t('Set `kimiCodeUsage.apiKey` or `.env` key to reconnect.')}`,
+      ].join('\n')
+    );
+    missingKeyTooltip.isTrusted = false;
+    statusBarItem.tooltip = missingKeyTooltip;
+    statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+    return;
+  }
+
+  if (!baseUrl || !baseUrl.trim()) {
+    statusBarItem.text = `$(link-external) ${t('Ground Control to Major Kimi!')}`;
+    statusBarItem.tooltip = `${t('Ground Control to Major Kimi!')} ${t('Check baseUrl and network link.')}`;
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
     return;
   }
@@ -210,90 +413,85 @@ async function refresh() {
       statusBarItem.text = `$(chip) ${t('Kimi: --')}`;
       statusBarItem.tooltip = t('No usage data');
       statusBarItem.backgroundColor = undefined;
+      console.warn('[KimiCodeUsage] API returned empty usage items. Payload structure may have changed.');
       return;
     }
 
-    // Find weekly item for pace calculation
-    const weeklyItem = items.find(i => {
-      const lower = i.label.toLowerCase();
-      return lower.includes('weekly') || lower.includes('week') || lower.includes('周');
-    });
+    const weeklyItem = findWindowItem(items, 'weekly');
+    const fiveHoursItem = findWindowItem(items, 'fiveHours');
 
     const showPace = cfg.get<boolean>('showPaceIndicator', true);
-    let pace: PaceState | null = null;
-    if (weeklyItem && showPace) {
-      pace = computePace(weeklyItem, getWindowSeconds(weeklyItem.label));
-    }
+    const pace = weeklyItem && showPace ? computePace(weeklyItem, getWindowSeconds(weeklyItem.label)) : null;
+    const paceState = pace?.state || 'impulse';
+    const pacePresentation = getPacePresentation(cfg, paceState);
 
-    // Build prefix with moon emoji + state
     const moonEmoji = pace
       ? (pace.state === 'warp' ? '🌒' : pace.state === 'impulse' ? '🌓' : '🌔')
       : '🌓';
-    const stateName = pace
-      ? t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk')
-      : t('Impulse');
-    const bar = pace ? formatPaceBar(pace.ratio) : '▰▰▱';
+    const paceBar = pace ? formatPaceBar(pace.ratio) : '▰▰▱';
 
-    const suffix = showPace
-      ? (pace?.state === 'warp' ? `> $(warning) ${stateName}` : pace?.state === 'impulse' ? `> $(dashboard) ${stateName}` : `> $(debug-step-over) ${stateName}`).trim()
-      : '';
+    const suffix = showPace ? `> $(${pacePresentation.icon}) ${pacePresentation.label}` : '';
 
-    const parts = items.map(i => `${shortLabel(i.label)}:${i.percent_left.toFixed(0)}%`);
-    const prefix = `${moonEmoji}  ${bar}  ${parts.join(' ')}`.trim();
+    const parts = items.map((i) => `${shortLabel(i.label)}:${i.percent_left.toFixed(0)}%`);
+    const prefix = `${moonEmoji}  ${paceBar}  ${parts.join(' ')}`.trim();
     statusBarItem.text = `${prefix} ${suffix}`.trim();
 
-    statusBarItem.backgroundColor = pace?.state === 'warp'
+    const lowWeekly = isLowRemaining(weeklyItem, thresholds.weekly);
+    const lowFiveHours = isLowRemaining(fiveHoursItem, thresholds.fiveHours);
+    const shouldRed = pace?.state === 'warp' || lowWeekly || lowFiveHours;
+
+    statusBarItem.backgroundColor = shouldRed
       ? new vscode.ThemeColor('statusBarItem.errorBackground')
       : undefined;
 
-    // Tooltip: reset times + pace only, centered
-    const tooltipLines: string[] = [];
-    const paceSegments: string[] = [];
-    for (const i of items) {
-      if (i.reset_at) {
-        const formatted = formatResetTimeAbsolute(i.reset_at);
-        const isZh = translator.t('left') === '剩余';
-        const lower = i.label.toLowerCase();
-        const name = isZh
-          ? (lower.includes('week') || lower.includes('周') ? '每周' : lower.includes('5h') || lower.includes('5小时') ? '每5小时' : lower.includes('month') || lower.includes('月') ? '每月' : i.label)
-          : (lower.includes('week') || lower.includes('周') ? 'Weekly' : lower.includes('5h') || lower.includes('5小时') ? '5 Hours' : lower.includes('month') || lower.includes('月') ? 'Monthly' : i.label);
-        const line = isZh
-          ? `${name}：剩余燃料：${formatted.relative} | 重新装填：${formatted.absolute}`
-          : `${name}: Fuel: ${formatted.relative} | Refuel: ${formatted.absolute}`;
-        tooltipLines.push(`<center>${line}</center>`);
-      } else if (i.reset_hint) {
-        tooltipLines.push(`<center>${i.reset_hint}</center>`);
+    const overviewEntries = items.map((item) => `${localizedLimitName(item.label)}: ${item.percent_left.toFixed(0)}% ${t('left')}`);
+
+    const resetEntries: string[] = [];
+    for (const item of items) {
+      const name = localizedLimitName(item.label);
+      if (item.reset_at) {
+        const formatted = formatResetTimeAbsolute(item.reset_at);
+        const line = translator.isZh()
+          ? t('{0}: Remaining Fuel: {1} | Refuel: {2}', name, formatted.relative, formatted.absolute)
+          : t('{0}: Fuel: {1} | Refuel: {2}', name, formatted.relative, formatted.absolute);
+        resetEntries.push(line);
+      } else if (item.reset_hint) {
+        resetEntries.push(`${name}: ${item.reset_hint}`);
       }
-      const itemPace = showPace ? computePace(i, getWindowSeconds(i.label)) : null;
-      if (itemPace) {
-        const isZh = translator.t('left') === '剩余';
+    }
+
+    const paceEntries: string[] = [];
+    if (showPace) {
+      for (const item of items) {
+        const itemPace = computePace(item, getWindowSeconds(item.label));
+        if (!itemPace) continue;
+        const itemPacePresentation = getPacePresentation(cfg, itemPace.state);
         const rawDeviation = (itemPace.ratio - 1.0) * 100;
         const deviation = rawDeviation.toFixed(2);
         const sign = rawDeviation > 0 ? '+' : '';
-        const lower = i.label.toLowerCase();
-        const segmentName = isZh
-          ? (lower.includes('week') || lower.includes('周') ? '每周' : lower.includes('5h') || lower.includes('5小时') ? '每5小时' : shortLabel(i.label))
-          : shortLabel(i.label);
-        paceSegments.push(`${segmentName} ${sign}${deviation}%`);
+        paceEntries.push(`${localizedLimitName(item.label)}: ${sign}${deviation}% ($(${itemPacePresentation.icon}) ${itemPacePresentation.label})`);
       }
     }
-    if (paceSegments.length > 0) {
-      const isZh = translator.t('left') === '剩余';
-      const label = isZh ? '曲率' : 'Warp Factor';
-      tooltipLines.push(`<center>${label}: ${paceSegments.join(' | ')}</center>`);
-    }
-    const tooltip = new vscode.MarkdownString(tooltipLines.join('<br>'));
-    tooltip.supportHtml = true;
-    statusBarItem.tooltip = tooltip;
 
+    const markdownLines: string[] = [];
+    pushSection(markdownLines, t('Usage Telemetry'), overviewEntries);
+    pushSection(markdownLines, t('Pace Details'), paceEntries);
+    pushSection(markdownLines, t('Reset Schedule'), resetEntries);
+
+    const tooltip = new vscode.MarkdownString(markdownLines.join('\n'));
+    tooltip.supportThemeIcons = true;
+    statusBarItem.tooltip = tooltip;
   } catch (err) {
-    statusBarItem.text = `$(sync~spin) Starman...`;
-    statusBarItem.tooltip = "Planet Earth is blue and there's nothing I can do. " + String(err);
-    statusBarItem.backgroundColor = undefined;
+    const errorView = buildErrorPresentation(err);
+    statusBarItem.text = errorView.text;
+    statusBarItem.tooltip = errorView.tooltip;
+    statusBarItem.backgroundColor = errorView.isWarning
+      ? new vscode.ThemeColor('statusBarItem.errorBackground')
+      : undefined;
   }
 }
 
-function fetchUsage(baseUrl: string, apiKey: string): Promise<any> {
+function fetchUsage(baseUrl: string, apiKey: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
     const url = new URL(baseUrl + '/usages');
     const req = https.get(
@@ -301,7 +499,7 @@ function fetchUsage(baseUrl: string, apiKey: string): Promise<any> {
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'User-Agent': 'kimi-usage-vscode/0.1.4',
+          'User-Agent': 'kimi-usage-vscode/0.1.5',
         },
         timeout: 10000,
       },
@@ -313,7 +511,7 @@ function fetchUsage(baseUrl: string, apiKey: string): Promise<any> {
             try {
               resolve(JSON.parse(body));
             } catch {
-              reject(new Error('Invalid JSON response'));
+              reject(new Error(t('Invalid JSON response')));
             }
           } else {
             reject(new Error(`HTTP ${res.statusCode}: ${body.slice(0, 200)}`));
@@ -321,30 +519,37 @@ function fetchUsage(baseUrl: string, apiKey: string): Promise<any> {
         });
       }
     );
+
     req.on('error', reject);
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Request timeout'));
+      reject(new Error(t('Request timeout')));
     });
   });
 }
 
-function parsePayload(payload: any): UsageItem[] {
+function parsePayload(payload: unknown): UsageItem[] {
+  const data = payload as Record<string, unknown>;
   const items: UsageItem[] = [];
 
-  const usage = payload?.usage;
+  const usage = data?.usage;
   if (usage && typeof usage === 'object') {
-    const row = toRow(usage, t('Weekly limit'));
+    const row = toRow(usage as Record<string, unknown>, t('Weekly limit'));
     if (row) items.push(row);
   }
 
-  const limits = payload?.limits;
+  const limits = data?.limits;
   if (Array.isArray(limits)) {
     for (let i = 0; i < limits.length; i++) {
       const item = limits[i];
       if (!item || typeof item !== 'object') continue;
-      const detail = item.detail && typeof item.detail === 'object' ? item.detail : item;
-      const label = limitLabel(item, detail, item.window || {}, i);
+
+      const itemObj = item as Record<string, unknown>;
+      const detail = (itemObj.detail && typeof itemObj.detail === 'object'
+        ? itemObj.detail
+        : itemObj) as Record<string, unknown>;
+
+      const label = limitLabel(itemObj, detail, (itemObj.window as Record<string, unknown>) || {}, i);
       const row = toRow(detail, label);
       if (row) items.push(row);
     }
@@ -353,48 +558,47 @@ function parsePayload(payload: any): UsageItem[] {
   return items;
 }
 
-function toRow(data: any, defaultLabel: string): UsageItem | null {
+function toRow(data: Record<string, unknown>, defaultLabel: string): UsageItem | null {
   const limit = toInt(data.limit);
   let used = toInt(data.used);
+
   if (used == null) {
     const remaining = toInt(data.remaining);
     if (remaining != null && limit != null) used = limit - remaining;
   }
   if (used == null && limit == null) return null;
+
   const u = used ?? 0;
   const l = limit ?? 0;
 
-  // Extract raw reset seconds for pace calculation
   let reset_seconds: number | null = null;
   for (const key of ['reset_in', 'resetIn', 'ttl']) {
     const s = toInt(data[key]);
-    if (s != null) { reset_seconds = s; break; }
+    if (s != null) {
+      reset_seconds = s;
+      break;
+    }
   }
+
   if (reset_seconds == null) {
     for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
       const v = data[key];
-      if (v) {
-        try {
-          let iso = String(v);
-          if (iso.includes('.') && iso.endsWith('Z')) {
-            const [base, frac] = iso.slice(0, -1).split('.');
-            iso = `${base}.${frac.slice(0, 6)}Z`;
-          }
-          const dt = new Date(iso.replace('Z', '+00:00'));
-          const sec = Math.floor((dt.getTime() - Date.now()) / 1000);
-          if (sec > 0) { reset_seconds = sec; break; }
-        } catch {
-          // ignore parse errors
-        }
+      if (!v) continue;
+      const sec = secondsUntil(String(v));
+      if (sec != null && sec > 0) {
+        reset_seconds = sec;
+        break;
       }
     }
   }
 
-  // Extract raw reset_at string for hover display
   let reset_at: string | null = null;
   for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
     const v = data[key];
-    if (v) { reset_at = String(v); break; }
+    if (v) {
+      reset_at = String(v);
+      break;
+    }
   }
 
   return {
@@ -409,82 +613,102 @@ function toRow(data: any, defaultLabel: string): UsageItem | null {
   };
 }
 
-function limitLabel(item: any, detail: any, window: any, idx: number): string {
+function limitLabel(item: Record<string, unknown>, detail: Record<string, unknown>, window: Record<string, unknown>, idx: number): string {
   for (const key of ['name', 'title', 'scope']) {
-    const v = item[key] || detail[key];
-    if (v) return String(v);
+    const value = item[key] ?? detail[key];
+    if (value) return String(value);
   }
-  const duration = toInt(window.duration || item.duration || detail.duration);
-  const timeUnit = String(window.timeUnit || item.timeUnit || detail.timeUnit || '');
+
+  const duration = toInt(window.duration ?? item.duration ?? detail.duration);
+  const timeUnit = String(window.timeUnit ?? item.timeUnit ?? detail.timeUnit ?? '');
+
   if (duration != null) {
-    if (timeUnit.includes('MINUTE')) return duration >= 60 && duration % 60 === 0 ? `${Math.floor(duration / 60)}h limit` : `${duration}m limit`;
+    if (timeUnit.includes('MINUTE')) {
+      return duration >= 60 && duration % 60 === 0
+        ? `${Math.floor(duration / 60)}h limit`
+        : `${duration}m limit`;
+    }
     if (timeUnit.includes('HOUR')) return `${duration}h limit`;
     if (timeUnit.includes('DAY')) return `${duration}d limit`;
     return `${duration}s limit`;
   }
+
   return `Limit #${idx + 1}`;
 }
 
-function resetHint(data: any): string | null {
+function resetHint(data: Record<string, unknown>): string | null {
   for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
     const v = data[key];
     if (v) return formatResetTime(String(v));
   }
   for (const key of ['reset_in', 'resetIn', 'ttl', 'window']) {
     const s = toInt(data[key]);
-    if (s) return `resets in ${formatDuration(s)}`;
+    if (s) return t('Resets in {0}', formatDuration(s));
   }
   return null;
 }
 
-function formatResetTime(val: string): string {
+function normalizeIso(val: string): string {
+  let iso = val;
+  if (iso.includes('.') && iso.endsWith('Z')) {
+    const [base, frac] = iso.slice(0, -1).split('.');
+    iso = `${base}.${frac.slice(0, 6)}Z`;
+  }
+  return iso;
+}
+
+function secondsUntil(val: string): number | null {
   try {
-    let iso = val;
-    if (iso.includes('.') && iso.endsWith('Z')) {
-      const [base, frac] = iso.slice(0, -1).split('.');
-      iso = `${base}.${frac.slice(0, 6)}Z`;
-    }
+    const iso = normalizeIso(val);
     const dt = new Date(iso.replace('Z', '+00:00'));
-    const now = new Date();
-    const sec = Math.floor((dt.getTime() - now.getTime()) / 1000);
-    if (sec <= 0) return 'reset';
-    return `resets in ${formatDuration(sec)}`;
+    if (Number.isNaN(dt.getTime())) return null;
+    return Math.floor((dt.getTime() - Date.now()) / 1000);
   } catch {
-    return `resets at ${val}`;
+    return null;
   }
 }
 
+function formatResetTime(val: string): string {
+  const sec = secondsUntil(val);
+  if (sec == null) return t('Resets at {0}', val);
+  if (sec <= 0) return t('Reset');
+  return t('Resets in {0}', formatDuration(sec));
+}
+
 function formatDuration(seconds: number): string {
-  const isZh = translator.t('left') === '剩余';
+  const isZh = translator.isZh();
   const parts: string[] = [];
+
   const days = Math.floor(seconds / 86400);
   if (days) parts.push(isZh ? `${days}天` : `${days}d`);
+
   const rem = seconds % 86400;
   const hours = Math.floor(rem / 3600);
   if (hours) parts.push(isZh ? `${hours}时` : `${hours}h`);
+
   const mins = Math.floor((rem % 3600) / 60);
   if (mins) parts.push(isZh ? `${mins}分` : `${mins}m`);
+
   const secs = rem % 60;
   if (secs && !parts.length) parts.push(isZh ? `${secs}秒` : `${secs}s`);
+
   return parts.join(' ') || (isZh ? '0秒' : '0s');
 }
 
 function formatResetTimeAbsolute(val: string): { absolute: string; relative: string } {
   try {
-    let iso = val;
-    if (iso.includes('.') && iso.endsWith('Z')) {
-      const [base, frac] = iso.slice(0, -1).split('.');
-      iso = `${base}.${frac.slice(0, 6)}Z`;
-    }
+    const iso = normalizeIso(val);
     const dt = new Date(iso.replace('Z', '+00:00'));
+    if (Number.isNaN(dt.getTime())) {
+      return { absolute: val, relative: t('Unknown') };
+    }
+
     const now = new Date();
     const sec = Math.floor((dt.getTime() - now.getTime()) / 1000);
-
-    const relative = sec <= 0 ? 'reset' : formatDuration(sec);
+    const relative = sec <= 0 ? t('Reset') : formatDuration(sec);
 
     const hours = dt.getHours().toString().padStart(2, '0');
     const mins = dt.getMinutes().toString().padStart(2, '0');
-    const isZh = translator.t('left') === '剩余';
 
     const resetDay = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -492,51 +716,30 @@ function formatResetTimeAbsolute(val: string): { absolute: string; relative: str
     tomorrow.setDate(today.getDate() + 1);
 
     if (resetDay.getTime() === today.getTime()) {
-      const absolute = isZh
-        ? `今天 ${hours}:${mins}`
-        : `Today ${hours}:${mins}`;
-      return { absolute, relative };
+      return { absolute: t('Today {0}:{1}', hours, mins), relative };
     }
     if (resetDay.getTime() === tomorrow.getTime()) {
-      const absolute = isZh
-        ? `明天 ${hours}:${mins}`
-        : `Tomorrow ${hours}:${mins}`;
-      return { absolute, relative };
+      return { absolute: t('Tomorrow {0}:{1}', hours, mins), relative };
     }
 
-    const weekdays = isZh
-      ? ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const wd = weekdays[dt.getDay()];
-
-    const absolute = isZh
-      ? `${wd} ${hours}:${mins}`
-      : `${wd} ${hours}:${mins}`;
-
-    return { absolute, relative };
+    const weekdays = [t('Sun'), t('Mon'), t('Tue'), t('Wed'), t('Thu'), t('Fri'), t('Sat')];
+    return { absolute: `${weekdays[dt.getDay()]} ${hours}:${mins}`, relative };
   } catch {
-    return { absolute: val, relative: 'unknown' };
+    return { absolute: val, relative: t('Unknown') };
   }
 }
 
-function toInt(v: any): number | null {
+function toInt(v: unknown): number | null {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
 
 function shortLabel(label: string): string {
-  const lower = label.toLowerCase();
-  const isZh = translator.t('left') === '剩余';
+  const type = detectWindowType(label);
 
-  if (lower.includes('weekly') || lower.includes('week') || lower.includes('周')) {
-    return isZh ? '周' : 'W';
-  }
-  if (lower.includes('5h') || lower.includes('5 hour') || lower.includes('5小时')) {
-    return isZh ? '5时' : '5H';
-  }
-  if (lower.includes('month') || lower.includes('monthly') || lower.includes('月')) {
-    return isZh ? '月' : 'M';
-  }
+  if (type === 'weekly') return translator.isZh() ? t('W-Short') : 'W';
+  if (type === 'fiveHours') return translator.isZh() ? t('5H-Short') : '5H';
+  if (type === 'monthly') return translator.isZh() ? t('M-Short') : 'M';
   return label.slice(0, 3);
 }
 
@@ -546,63 +749,68 @@ async function showDetails() {
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
 
   if (!apiKey) {
-    vscode.window.showWarningMessage(t('Kimi API key not configured.'));
+    vscode.window.showWarningMessage(`${t('Ground Control to Major Kimi!')} ${t('Set `kimiCodeUsage.apiKey` or `.env` key to reconnect.')}`);
+    return;
+  }
+
+  if (!baseUrl || !baseUrl.trim()) {
+    vscode.window.showWarningMessage(`${t('Ground Control to Major Kimi!')} ${t('Check baseUrl and network link.')}`);
     return;
   }
 
   try {
     const data = await fetchUsage(baseUrl, apiKey);
     const items = parsePayload(data);
-
     const showPace = cfg.get<boolean>('showPaceIndicator', true);
 
-    const picks = items.map((i) => {
-      const isZh = translator.t('left') === '剩余';
-      const lower = i.label.toLowerCase();
-      const displayName = isZh
-        ? (lower.includes('week') || lower.includes('周') ? '每周' : lower.includes('5h') || lower.includes('5小时') ? '每5小时' : lower.includes('month') || lower.includes('月') ? '每月' : i.label)
-        : (lower.includes('week') || lower.includes('周') ? 'Weekly' : lower.includes('5h') || lower.includes('5小时') ? '5 Hours' : lower.includes('month') || lower.includes('月') ? 'Monthly' : i.label);
-      let label = `${displayName}: ${i.percent_left.toFixed(0)}% ${t('left')}`;
+    const picks: vscode.QuickPickItem[] = items.map((item) => {
+      const displayName = localizedLimitName(item.label);
+      const label = `${displayName}: ${item.percent_left.toFixed(0)}% ${t('left')}`;
+      const segments: string[] = [];
+      let detail = '';
 
-      // Append pace info
-      const pace = showPace ? computePace(i, getWindowSeconds(i.label)) : null;
-      if (pace) {
-        const isZh = translator.t('left') === '剩余';
-        const paceLabel = isZh ? '曲率' : 'Warp Factor';
-        const rawDeviation = (pace.ratio - 1.0) * 100;
-        const deviation = rawDeviation.toFixed(2);
-        const sign = rawDeviation > 0 ? '+' : '';
-        const stateName = t(pace.state === 'warp' ? 'Warp' : pace.state === 'impulse' ? 'Impulse' : 'Moonwalk');
-        label += `    [${paceLabel}: ${sign}${deviation}% > ${stateName}]`;
-      }
-
-      // Try to show absolute reset time
-      const raw = data?.usage || data?.limits?.find((l: any) => {
-        const detail = l?.detail || l;
-        return (detail?.name || detail?.title || '') === i.label;
-      });
-      const detailData = raw?.detail || raw;
-      if (detailData) {
-        for (const key of ['reset_at', 'resetAt', 'reset_time', 'resetTime']) {
-          const v = detailData[key];
-          if (v) {
-            const formatted = formatResetTimeAbsolute(String(v));
-            const isZh = translator.t('left') === '剩余';
-            if (isZh) {
-              label += `    ${formatted.absolute}重置 (剩 ${formatted.relative})`;
-            } else {
-              label += `    Resets ${formatted.absolute} (in ${formatted.relative})`;
-            }
-            break;
-          }
+      if (showPace) {
+        const pace = computePace(item, getWindowSeconds(item.label));
+        if (pace) {
+          const rawDeviation = (pace.ratio - 1.0) * 100;
+          const deviation = rawDeviation.toFixed(2);
+          const sign = rawDeviation > 0 ? '+' : '';
+          const pacePresentation = getPacePresentation(cfg, pace.state);
+          segments.push(`${t('Warp Factor')}: ${sign}${deviation}%`);
+          segments.push(`$(${pacePresentation.icon}) ${pacePresentation.label}`);
         }
       }
 
-      return { label };
+      if (item.reset_at) {
+        const formatted = formatResetTimeAbsolute(item.reset_at);
+        detail = t('Resets {0} (in {1})', formatted.absolute, formatted.relative);
+      } else if (item.reset_hint) {
+        detail = item.reset_hint;
+      }
+
+      return {
+        label,
+        description: segments.join('  •  '),
+        detail,
+      };
     });
 
-    vscode.window.showQuickPick(picks, { placeHolder: t('Kimi API Usage Details') });
+    vscode.window.showQuickPick(picks, {
+      placeHolder: t('Kimi API Usage Details'),
+      matchOnDescription: true,
+      matchOnDetail: true,
+    });
   } catch (err) {
-    vscode.window.showErrorMessage(t('Kimi usage fetch failed: {0}', String(err)));
+    const rawLower = String(err ?? '').toLowerCase();
+    if (isLinkIssue(err)) {
+      vscode.window.showWarningMessage(`${t('Ground Control to Major Kimi!')} ${t('Check baseUrl and network link.')}`);
+      return;
+    }
+    if (rawLower.includes('http 5')) {
+      vscode.window.showWarningMessage(`${t('Server error from Kimi API. Please retry shortly.')}: ${String(err ?? '').slice(0, 200)}`);
+      return;
+    }
+    const raw = String(err ?? '');
+    vscode.window.showWarningMessage(`${t('Usage fetch failed')}: ${raw.slice(0, 200)}`);
   }
 }
