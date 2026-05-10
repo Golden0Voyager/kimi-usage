@@ -86,7 +86,11 @@ In the vastness of the code universe, your creative flow shouldn't be pulled dow
 | `apiKey` | Your Kimi API secret / 核心密钥 | `KIMI_CODING_API_KEY` |
 | `baseUrl` | API base URL / 接口基站 | `Kimi Coding V1` |
 | `refreshIntervalMinutes` | Auto-sync minutes / 雷达刷新间隔 | `5` |
+| `weeklyLowThresholdPercent` | Weekly low quota threshold (%) / 每周低余量告警阈值 | `30` |
+| `fiveHourLowThresholdPercent` | 5-hour low quota threshold (%) / 5小时低余量告警阈值 | `30` |
 | `showPaceIndicator` | Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针 | `true` |
+| `paceLabels` | Custom pace labels / 自定义速度状态名称 | `{overload, impulse, moonwalk}` |
+| `paceIcons` | Custom codicon names / 自定义状态图标名称 | `{warning, dashboard, coffee}` |
 
 ---
 
