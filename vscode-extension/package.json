@@ -6,7 +6,7 @@
   "publisher": "HainingYu",
   "author": "Haining Yu",
   "license": "MIT",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/Golden0Voyager/kimi-code-usage.git"
@@ -28,31 +28,102 @@
     "configuration": {
       "title": "Kimi Code Usage",
       "properties": {
-        "kimiCodeUsage.apiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Kimi API Key / 密钥 (Or set via KIMI_API_KEY env var / 或通过 KIMI_API_KEY 环境变量设置)"
-        },
-        "kimiCodeUsage.baseUrl": {
-          "type": "string",
-          "default": "https://api.kimi.com/coding/v1",
-          "description": "API Base URL / API 基础地址"
-        },
-        "kimiCodeUsage.refreshIntervalMinutes": {
-          "type": "number",
-          "default": 5,
-          "description": "Refresh interval in minutes / 自动刷新频率 (分钟)"
-        },
-        "kimiCodeUsage.showPaceIndicator": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针（曲率/脉冲/月球漫步）"
-        },
         "kimiCodeUsage.language": {
           "type": "string",
           "default": "Auto",
           "enum": ["Auto", "English", "Chinese"],
-          "description": "Display Language / 显示语言 (Requires restart / 重启插件后生效)"
+          "description": "Display Language / 显示语言 (Requires restart / 重启插件后生效)",
+          "order": 1
+        },
+        "kimiCodeUsage.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Kimi API Key / 密钥 (Or set via KIMI_API_KEY env var / 或通过 KIMI_API_KEY 环境变量设置)",
+          "order": 2
+        },
+        "kimiCodeUsage.baseUrl": {
+          "type": "string",
+          "default": "https://api.kimi.com/coding/v1",
+          "description": "API Base URL / API 基础地址",
+          "order": 3
+        },
+        "kimiCodeUsage.refreshIntervalMinutes": {
+          "type": "number",
+          "default": 5,
+          "description": "Refresh interval in minutes / 自动刷新频率 (分钟)",
+          "order": 4
+        },
+        "kimiCodeUsage.weeklyLowThresholdPercent": {
+          "type": "number",
+          "default": 30,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Weekly low quota threshold (%) for red status bar warning / 每周低余量阈值(%)，低于时状态栏变红",
+          "order": 5
+        },
+        "kimiCodeUsage.fiveHourLowThresholdPercent": {
+          "type": "number",
+          "default": 15,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "5-hour low quota threshold (%) for red status bar warning / 5小时低余量阈值(%)，低于时状态栏变红",
+          "order": 6
+        },
+        "kimiCodeUsage.showPaceIndicator": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针（曲率/脉冲/月球漫步）",
+          "order": 7
+        },
+        "kimiCodeUsage.paceLabels": {
+          "type": "object",
+          "default": {
+            "overload": "Overload",
+            "impulse": "Impulse",
+            "moonwalk": "Moonwalk"
+          },
+          "description": "Advanced: custom pace labels by state (overload/impulse/moonwalk) / 高级：自定义速度状态名称",
+          "order": 8,
+          "additionalProperties": false,
+          "properties": {
+            "overload": {
+              "type": "string",
+              "description": "Label for overload state / 过载状态名称"
+            },
+            "impulse": {
+              "type": "string",
+              "description": "Label for impulse state / 脉冲状态名称"
+            },
+            "moonwalk": {
+              "type": "string",
+              "description": "Label for moonwalk state / 月球漫步状态名称"
+            }
+          }
+        },
+        "kimiCodeUsage.paceIcons": {
+          "type": "object",
+          "default": {
+            "overload": "warning",
+            "impulse": "dashboard",
+            "moonwalk": "coffee"
+          },
+          "description": "Advanced: codicon names by pace state (e.g. warning, dashboard) / 高级：按状态配置 Codicon 名称",
+          "order": 9,
+          "additionalProperties": false,
+          "properties": {
+            "overload": {
+              "type": "string",
+              "description": "Codicon for overload state / 过载状态图标"
+            },
+            "impulse": {
+              "type": "string",
+              "description": "Codicon for impulse state / 脉冲状态图标"
+            },
+            "moonwalk": {
+              "type": "string",
+              "description": "Codicon for moonwalk state / 月球漫步状态图标"
+            }
+          }
         }
       }
     },
