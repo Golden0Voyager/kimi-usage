@@ -43,6 +43,33 @@ const ICON_NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
 type LanguageChoice = 'Auto' | 'English' | 'Chinese';
 type WindowType = 'weekly' | 'fiveHours' | 'monthly' | 'other';
 
+type PaceTheme = 'default' | 'animals' | 'racing' | 'fish' | 'birds' | 'rocket' | 'running' | 'starWars' | 'starTrek' | 'backToTheFuture';
+type PaceSensitivity = 'relaxed' | 'normal' | 'strict';
+
+interface ThresholdConfig {
+  warp: number;
+  moonwalk: number;
+}
+
+const THEME_LABELS: Record<PaceTheme, Record<'warp' | 'impulse' | 'moonwalk', string>> = {
+  default: { warp: 'Warp', impulse: 'Impulse', moonwalk: 'Moonwalk' },
+  animals: { warp: 'Cheetah', impulse: 'Lynx', moonwalk: 'Sloth' },
+  racing: { warp: 'Nitro', impulse: 'Cruise', moonwalk: 'Idle' },
+  fish: { warp: 'Marlin', impulse: 'Dolphin', moonwalk: 'Turtle' },
+  birds: { warp: 'Peregrine', impulse: 'Eagle', moonwalk: 'Ostrich' },
+  rocket: { warp: 'Thrust', impulse: 'Propulsion', moonwalk: 'Hover' },
+  running: { warp: 'Sprint', impulse: 'Jog', moonwalk: 'Moonwalk' },
+  starWars: { warp: 'Falcon', impulse: 'X-Wing', moonwalk: 'Shuttle' },
+  starTrek: { warp: 'Defiant', impulse: 'Enterprise', moonwalk: 'Shuttle' },
+  backToTheFuture: { warp: 'Flux', impulse: 'Driving', moonwalk: 'Parked' },
+};
+
+const SENSITIVITY_THRESHOLDS: Record<PaceSensitivity, ThresholdConfig> = {
+  relaxed: { warp: 1.3, moonwalk: 0.7 },
+  normal: { warp: 1.1, moonwalk: 0.9 },
+  strict: { warp: 1.05, moonwalk: 0.95 },
+};
+
 const PACE_CONFIG = {
   warp: {
     labelKey: 'Warp',
@@ -64,7 +91,7 @@ const PACE_CONFIG = {
   },
 } as const;
 
-function computePace(item: UsageItem, windowSeconds: number): PaceState | null {
+function computePace(item: UsageItem, windowSeconds: number, thresholds: ThresholdConfig): PaceState | null {
   if (!item.reset_seconds || item.reset_seconds <= 0) return null;
   if (item.limit <= 0) return null;
 
@@ -78,8 +105,8 @@ function computePace(item: UsageItem, windowSeconds: number): PaceState | null {
   const ratio = Math.min(rawRatio, 5.0);
 
   let state: 'warp' | 'impulse' | 'moonwalk';
-  if (ratio >= 1.1) state = 'warp';
-  else if (ratio <= 0.9) state = 'moonwalk';
+  if (ratio >= thresholds.warp) state = 'warp';
+  else if (ratio <= thresholds.moonwalk) state = 'moonwalk';
   else state = 'impulse';
 
   return { ratio, state };
@@ -100,10 +127,10 @@ function getWindowSeconds(label: string): number {
   return WEEKLY_WINDOW_SECONDS;
 }
 
-function formatPaceBar(ratio: number): string {
+function formatPaceBar(ratio: number, thresholds: ThresholdConfig): string {
   let filled: number;
-  if (ratio >= 1.1) filled = 3;
-  else if (ratio >= 0.9) filled = 2;
+  if (ratio >= thresholds.warp) filled = 3;
+  else if (ratio >= thresholds.moonwalk) filled = 2;
   else filled = 1;
   return '▰'.repeat(filled) + '▱'.repeat(3 - filled);
 }
@@ -208,6 +235,18 @@ function readThresholdSettings(cfg: vscode.WorkspaceConfiguration): ThresholdSet
   };
 }
 
+function readPaceThresholds(cfg: vscode.WorkspaceConfiguration): ThresholdConfig {
+  const sensitivity = cfg.get<PaceSensitivity>('paceSensitivity', 'normal');
+  const preset = SENSITIVITY_THRESHOLDS[sensitivity] ?? SENSITIVITY_THRESHOLDS.normal;
+
+  const custom = cfg.get<Partial<ThresholdConfig>>('paceThresholds', {});
+
+  return {
+    warp: Number.isFinite(custom.warp) ? custom.warp! : preset.warp,
+    moonwalk: Number.isFinite(custom.moonwalk) ? custom.moonwalk! : preset.moonwalk,
+  };
+}
+
 function normalizeIconName(raw: string, fallback: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return fallback;
@@ -223,12 +262,21 @@ function normalizeIconName(raw: string, fallback: string): string {
 function getPacePresentation(cfg: vscode.WorkspaceConfiguration, state: PaceState['state']): PacePresentation {
   const config = PACE_CONFIG[state];
   const defaultLabel = t(config.labelKey);
+
+  // 1. 独立覆盖（最高优先级）
   const labelObject = cfg.get<Record<string, string>>('paceLabels', {});
   const fromObject = typeof labelObject?.[state] === 'string' ? labelObject[state] : '';
   const fromLegacy = cfg.get<string>(config.labelSetting, '');
-  const configuredLabel = (fromObject || fromLegacy || defaultLabel).trim();
+
+  // 2. 主题预设
+  const theme = cfg.get<PaceTheme>('paceTheme', 'default');
+  const themeKey = (THEME_LABELS[theme] ?? THEME_LABELS.default)[state];
+  const themeLabel = t(themeKey);
+
+  const configuredLabel = (fromObject || fromLegacy || themeLabel).trim();
   const label = configuredLabel || defaultLabel;
 
+  // 图标逻辑不变
   const iconObject = cfg.get<Record<string, string>>('paceIcons', {});
   const iconFromObject = typeof iconObject?.[state] === 'string' ? iconObject[state] : '';
   const iconFromLegacy = cfg.get<string>(config.iconSetting, '');
@@ -383,6 +431,7 @@ async function refresh() {
   const apiKey = await resolveApiKey();
   const baseUrl = cfg.get<string>('baseUrl', 'https://api.kimi.com/coding/v1');
   const thresholds = readThresholdSettings(cfg);
+  const paceThresholds = readPaceThresholds(cfg);
 
   if (!apiKey) {
     statusBarItem.text = `$(key) ${t('API Key Missing')}`;
@@ -421,14 +470,14 @@ async function refresh() {
     const fiveHoursItem = findWindowItem(items, 'fiveHours');
 
     const showPace = cfg.get<boolean>('showPaceIndicator', true);
-    const pace = weeklyItem && showPace ? computePace(weeklyItem, getWindowSeconds(weeklyItem.label)) : null;
+    const pace = weeklyItem && showPace ? computePace(weeklyItem, getWindowSeconds(weeklyItem.label), paceThresholds) : null;
     const paceState = pace?.state || 'impulse';
     const pacePresentation = getPacePresentation(cfg, paceState);
 
     const moonEmoji = pace
       ? (pace.state === 'warp' ? '🌒' : pace.state === 'impulse' ? '🌓' : '🌔')
       : '🌓';
-    const paceBar = pace ? formatPaceBar(pace.ratio) : '▰▰▱';
+    const paceBar = pace ? formatPaceBar(pace.ratio, paceThresholds) : '▰▰▱';
 
     const suffix = showPace ? `> $(${pacePresentation.icon}) ${pacePresentation.label}` : '';
 
@@ -463,7 +512,7 @@ async function refresh() {
     const paceEntries: string[] = [];
     if (showPace) {
       for (const item of items) {
-        const itemPace = computePace(item, getWindowSeconds(item.label));
+        const itemPace = computePace(item, getWindowSeconds(item.label), paceThresholds);
         if (!itemPace) continue;
         const itemPacePresentation = getPacePresentation(cfg, itemPace.state);
         const rawDeviation = (itemPace.ratio - 1.0) * 100;
@@ -761,6 +810,7 @@ async function showDetails() {
   try {
     const data = await fetchUsage(baseUrl, apiKey);
     const items = parsePayload(data);
+    const paceThresholds = readPaceThresholds(cfg);
     const showPace = cfg.get<boolean>('showPaceIndicator', true);
 
     const picks: vscode.QuickPickItem[] = items.map((item) => {
@@ -770,7 +820,7 @@ async function showDetails() {
       let detail = '';
 
       if (showPace) {
-        const pace = computePace(item, getWindowSeconds(item.label));
+        const pace = computePace(item, getWindowSeconds(item.label), paceThresholds);
         if (pace) {
           const rawDeviation = (pace.ratio - 1.0) * 100;
           const deviation = rawDeviation.toFixed(2);
