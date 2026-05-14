@@ -1,0 +1,42 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "vscode-extension/node_modules/typescript/lib"
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Extension",
+        "type": "extensionHost",
+        "request": "launch",
+        "args": [
+          "--extensionDevelopmentPath=${workspaceFolder}/vscode-extension"
+        ],
+        "outFiles": [
+          "${workspaceFolder}/vscode-extension/out/**/*.js"
+        ],
+        "preLaunchTask": "npm: compile"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "type": "npm",
+        "script": "compile",
+        "path": "vscode-extension",
+        "group": "build",
+        "presentation": {
+          "reveal": "never"
+        },
+        "problemMatcher": "$tsc"
+      }
+    ]
+  }
+}
