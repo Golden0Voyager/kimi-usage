@@ -845,11 +845,22 @@ async function showDetails() {
       };
     });
 
-    vscode.window.showQuickPick(picks, {
+    const settingsLabel = `$(gear) ${t('Open Settings')}`;
+    picks.push({
+      label: settingsLabel,
+      description: '',
+      detail: '',
+    });
+
+    const selected = await vscode.window.showQuickPick(picks, {
       placeHolder: t('Kimi API Usage Details'),
       matchOnDescription: true,
       matchOnDetail: true,
     });
+
+    if (selected?.label === settingsLabel) {
+      await vscode.commands.executeCommand('workbench.action.openSettings', 'kimiCodeUsage');
+    }
   } catch (err) {
     const rawLower = String(err ?? '').toLowerCase();
     if (isLinkIssue(err)) {
