@@ -43,8 +43,8 @@ const ICON_NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
 type LanguageChoice = 'Auto' | 'English' | 'Chinese';
 type WindowType = 'weekly' | 'fiveHours' | 'monthly' | 'other';
 
-type PaceTheme = 'default' | 'animals' | 'racing' | 'fish' | 'birds' | 'rocket' | 'running' | 'starWars' | 'starTrek' | 'backToTheFuture';
-type PaceSensitivity = 'relaxed' | 'normal' | 'strict';
+type PaceTheme = 'Default' | 'Animals' | 'Racing' | 'Fish' | 'Birds' | 'Rocket' | 'Running' | 'STAR WARS' | 'STAR TREK' | 'BACK TO THE FUTURE';
+type PaceSensitivity = 'Relaxed' | 'Normal' | 'Strict' | 'custom';
 
 interface ThresholdConfig {
   warp: number;
@@ -52,41 +52,41 @@ interface ThresholdConfig {
 }
 
 const THEME_LABELS: Record<PaceTheme, Record<'warp' | 'impulse' | 'moonwalk', string>> = {
-  default: { warp: 'Warp', impulse: 'Impulse', moonwalk: 'Moonwalk' },
-  animals: { warp: 'Cheetah', impulse: 'Lynx', moonwalk: 'Sloth' },
-  racing: { warp: 'Nitro', impulse: 'Cruise', moonwalk: 'Idle' },
-  fish: { warp: 'Marlin', impulse: 'Dolphin', moonwalk: 'Turtle' },
-  birds: { warp: 'Peregrine', impulse: 'Eagle', moonwalk: 'Ostrich' },
-  rocket: { warp: 'Thrust', impulse: 'Propulsion', moonwalk: 'Hover' },
-  running: { warp: 'Sprint', impulse: 'Jog', moonwalk: 'Moonwalk' },
-  starWars: { warp: 'Falcon', impulse: 'X-Wing', moonwalk: 'Shuttle' },
-  starTrek: { warp: 'Defiant', impulse: 'Enterprise', moonwalk: 'Shuttle' },
-  backToTheFuture: { warp: 'Flux', impulse: 'Driving', moonwalk: 'Parked' },
+  'Default': { warp: 'Warp', impulse: 'Impulse', moonwalk: 'Moonwalk' },
+  'Animals': { warp: 'Cheetah', impulse: 'Lynx', moonwalk: 'Sloth' },
+  'Racing': { warp: 'Nitro', impulse: 'Cruise', moonwalk: 'Idle' },
+  'Fish': { warp: 'Marlin', impulse: 'Dolphin', moonwalk: 'Turtle' },
+  'Birds': { warp: 'Peregrine', impulse: 'Eagle', moonwalk: 'Ostrich' },
+  'Rocket': { warp: 'Thrust', impulse: 'Propulsion', moonwalk: 'Hover' },
+  'Running': { warp: 'Sprint', impulse: 'Jog', moonwalk: 'Moonwalk' },
+  'STAR WARS': { warp: 'Falcon', impulse: 'X-Wing', moonwalk: 'Shuttle' },
+  'STAR TREK': { warp: 'Defiant', impulse: 'Enterprise', moonwalk: 'Shuttle' },
+  'BACK TO THE FUTURE': { warp: 'Flux', impulse: 'Driving', moonwalk: 'Parked' },
 };
 
-const SENSITIVITY_THRESHOLDS: Record<PaceSensitivity, ThresholdConfig> = {
-  relaxed: { warp: 1.2, moonwalk: 0.8 },
-  normal: { warp: 1.1, moonwalk: 0.9 },
-  strict: { warp: 1.05, moonwalk: 0.95 },
+const SENSITIVITY_THRESHOLDS: Record<Exclude<PaceSensitivity, 'custom'>, ThresholdConfig> = {
+  Relaxed: { warp: 1.2, moonwalk: 0.8 },
+  Normal: { warp: 1.12, moonwalk: 0.88 },
+  Strict: { warp: 1.05, moonwalk: 0.95 },
 };
 
 const PACE_CONFIG = {
   warp: {
     labelKey: 'Warp',
-    labelSetting: 'paceLabels.overload',
-    iconSetting: 'paceIcons.overload',
+    labelSetting: 'paceLabels.fast',
+    iconSetting: 'paceIcons.fast',
     defaultIcon: 'warning',
   },
   impulse: {
     labelKey: 'Impulse',
-    labelSetting: 'paceLabels.impulse',
-    iconSetting: 'paceIcons.impulse',
+    labelSetting: 'paceLabels.normal',
+    iconSetting: 'paceIcons.normal',
     defaultIcon: 'dashboard',
   },
   moonwalk: {
     labelKey: 'Moonwalk',
-    labelSetting: 'paceLabels.moonwalk',
-    iconSetting: 'paceIcons.moonwalk',
+    labelSetting: 'paceLabels.slow',
+    iconSetting: 'paceIcons.slow',
     defaultIcon: 'coffee',
   },
 } as const;
@@ -202,14 +202,48 @@ export function activate(context: vscode.ExtensionContext) {
   const refreshCmd = vscode.commands.registerCommand('kimiCodeUsage.refresh', refresh);
   const detailsCmd = vscode.commands.registerCommand('kimiCodeUsage.showDetails', showDetails);
 
-  const configChangeDisposable = vscode.workspace.onDidChangeConfiguration((e) => {
-    if (e.affectsConfiguration('kimiCodeUsage')) {
-      if (e.affectsConfiguration('kimiCodeUsage.language')) {
-        translator.update(context);
-      }
-      restartInterval();
-      refresh();
+  const configChangeDisposable = vscode.workspace.onDidChangeConfiguration(async (e) => {
+    if (!e.affectsConfiguration('kimiCodeUsage')) return;
+
+    const cfg = vscode.workspace.getConfiguration('kimiCodeUsage');
+
+    if (e.affectsConfiguration('kimiCodeUsage.language')) {
+      translator.update(context);
     }
+
+    // Sensitivity changed -> auto-sync thresholds
+    if (e.affectsConfiguration('kimiCodeUsage.paceSensitivity')) {
+      const sensitivity = cfg.get<PaceSensitivity>('paceSensitivity', 'Normal');
+      if (sensitivity !== 'custom') {
+        const preset = SENSITIVITY_THRESHOLDS[sensitivity] ?? SENSITIVITY_THRESHOLDS.Normal;
+        await cfg.update('paceThresholdFast', preset.warp, true);
+        await cfg.update('paceThresholdSlow', preset.moonwalk, true);
+      }
+    }
+
+    // Thresholds changed -> auto-detect sensitivity match
+    const fastChanged = e.affectsConfiguration('kimiCodeUsage.paceThresholdFast');
+    const slowChanged = e.affectsConfiguration('kimiCodeUsage.paceThresholdSlow');
+    const sensitivityChanged = e.affectsConfiguration('kimiCodeUsage.paceSensitivity');
+    // Skip if only one threshold changed (partial update from sensitivity sync)
+    if ((fastChanged && slowChanged) && !sensitivityChanged) {
+      const fast = cfg.get<number>('paceThresholdFast');
+      const slow = cfg.get<number>('paceThresholdSlow');
+      if (Number.isFinite(fast) && Number.isFinite(slow)) {
+        let matched: PaceSensitivity | null = null;
+        for (const [key, preset] of Object.entries(SENSITIVITY_THRESHOLDS)) {
+          if (key === 'custom') continue;
+          if (preset.warp === fast && preset.moonwalk === slow) {
+            matched = key as PaceSensitivity;
+            break;
+          }
+        }
+        await cfg.update('paceSensitivity', matched ?? 'custom', true);
+      }
+    }
+
+    restartInterval();
+    refresh();
   });
 
   context.subscriptions.push(statusBarItem, refreshCmd, detailsCmd, configChangeDisposable);
@@ -236,14 +270,17 @@ function readThresholdSettings(cfg: vscode.WorkspaceConfiguration): ThresholdSet
 }
 
 function readPaceThresholds(cfg: vscode.WorkspaceConfiguration): ThresholdConfig {
-  const sensitivity = cfg.get<PaceSensitivity>('paceSensitivity', 'normal');
-  const preset = SENSITIVITY_THRESHOLDS[sensitivity] ?? SENSITIVITY_THRESHOLDS.normal;
+  const sensitivity = cfg.get<PaceSensitivity>('paceSensitivity', 'Normal');
+  const preset = sensitivity === 'custom'
+    ? SENSITIVITY_THRESHOLDS.Normal
+    : (SENSITIVITY_THRESHOLDS[sensitivity] ?? SENSITIVITY_THRESHOLDS.Normal);
 
-  const custom = cfg.get<Partial<ThresholdConfig>>('paceThresholds', {});
+  const customWarp = cfg.get<number>('paceThresholdFast');
+  const customMoonwalk = cfg.get<number>('paceThresholdSlow');
 
   return {
-    warp: Number.isFinite(custom.warp) ? custom.warp! : preset.warp,
-    moonwalk: Number.isFinite(custom.moonwalk) ? custom.moonwalk! : preset.moonwalk,
+    warp: Number.isFinite(customWarp) ? customWarp! : preset.warp,
+    moonwalk: Number.isFinite(customMoonwalk) ? customMoonwalk! : preset.moonwalk,
   };
 }
 
@@ -269,8 +306,8 @@ function getPacePresentation(cfg: vscode.WorkspaceConfiguration, state: PaceStat
   const fromLegacy = cfg.get<string>(config.labelSetting, '');
 
   // 2. 主题预设
-  const theme = cfg.get<PaceTheme>('paceTheme', 'default');
-  const themeKey = (THEME_LABELS[theme] ?? THEME_LABELS.default)[state];
+  const theme = cfg.get<PaceTheme>('paceTheme', 'Default');
+  const themeKey = (THEME_LABELS[theme] ?? THEME_LABELS['Default'])[state];
   const themeLabel = t(themeKey);
 
   const configuredLabel = (fromObject || fromLegacy || themeLabel).trim();
@@ -474,9 +511,14 @@ async function refresh() {
     const paceState = pace?.state || 'impulse';
     const pacePresentation = getPacePresentation(cfg, paceState);
 
-    const moonEmoji = pace
-      ? (pace.state === 'warp' ? '🌒' : pace.state === 'impulse' ? '🌓' : '🌔')
-      : '🌓';
+    const moonEmoji = (() => {
+      const quotaItems = [weeklyItem, fiveHoursItem].filter(Boolean) as UsageItem[];
+      for (const item of quotaItems) {
+        if (item.percent_left >= 99) return '🌕';
+        if (item.percent_left <= 1) return '🌑';
+      }
+      return paceState === 'warp' ? '🌒' : paceState === 'impulse' ? '🌓' : '🌔';
+    })();
     const paceBar = pace ? formatPaceBar(pace.ratio, paceThresholds) : '▰▰▱';
 
     const suffix = showPace ? `> $(${pacePresentation.icon}) ${pacePresentation.label}` : '';
