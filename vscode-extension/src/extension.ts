@@ -65,7 +65,7 @@ const THEME_LABELS: Record<PaceTheme, Record<'warp' | 'impulse' | 'moonwalk', st
 };
 
 const SENSITIVITY_THRESHOLDS: Record<PaceSensitivity, ThresholdConfig> = {
-  relaxed: { warp: 1.3, moonwalk: 0.7 },
+  relaxed: { warp: 1.2, moonwalk: 0.8 },
   normal: { warp: 1.1, moonwalk: 0.9 },
   strict: { warp: 1.05, moonwalk: 0.95 },
 };
