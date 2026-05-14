@@ -124,6 +124,36 @@
               "description": "Codicon for moonwalk state / 月球漫步状态图标"
             }
           }
+        },
+        "kimiCodeUsage.paceTheme": {
+          "type": "string",
+          "default": "default",
+          "enum": ["default", "animals", "racing", "fish", "birds", "rocket", "running", "starWars", "starTrek", "backToTheFuture"],
+          "description": "Pace label theme preset / 速度指针主题预设",
+          "order": 10
+        },
+        "kimiCodeUsage.paceSensitivity": {
+          "type": "string",
+          "default": "normal",
+          "enum": ["relaxed", "normal", "strict"],
+          "description": "Pace threshold sensitivity / 阈值灵敏度档位",
+          "order": 11
+        },
+        "kimiCodeUsage.paceThresholds": {
+          "type": "object",
+          "default": {},
+          "description": "Advanced: override pace thresholds (warp/moonwalk). Empty fields fall back to sensitivity preset / 高级：覆盖速度分界阈值，留空则回退到灵敏度预设",
+          "order": 12,
+          "properties": {
+            "warp": {
+              "type": "number",
+              "description": "Ratio threshold to enter warp state / 进入 warp 状态的 ratio 下限"
+            },
+            "moonwalk": {
+              "type": "number",
+              "description": "Ratio threshold to enter moonwalk state / 进入 moonwalk 状态的 ratio 上限"
+            }
+          }
         }
       }
     },
