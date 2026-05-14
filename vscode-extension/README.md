@@ -57,11 +57,11 @@ In the vastness of the code universe, your creative flow shouldn't be pulled dow
   A sleek indicator showing your remaining API telemetry at a glance.
   极致简洁的百分比显示，一眼看清飞船的剩余能量。
 - **Pace Indicator | 曲率引擎指针**
-  Real-time consumption velocity relative to elapsed time. Know whether you're burning fuel too fast or cruising efficiently.
-  实时追踪你的 API 消耗速率与日历进度的比值，洞悉燃料燃烧节奏：
-  - 🌒 **Overload** (曲率加速) — Burning faster than elapsed time. Red alert background. 消耗速度超过时间进度，触发红色警报背景。
-  - 🌓 **Impulse** (脉冲推进) — Right on schedule. Steady cruising. 消耗与时间进度同步，平稳巡航。
-  - 🌔 **Moonwalk** (月球漫步) — Conserving fuel, well below pace. 节省燃料，远低于预期消耗。
+  Real-time consumption velocity with 10 theme presets. Know whether you're burning fuel too fast or cruising efficiently.
+  实时追踪 API 消耗速率，10 款主题预设（动物、赛车、星战…），洞悉燃料燃烧节奏：
+  - 🌒 **Fast** — Burning faster than elapsed time. Red alert background. 消耗速度超过时间进度，触发红色警报背景。
+  - 🌓 **Normal** — Right on schedule. Steady cruising. 消耗与时间进度同步，平稳巡航。
+  - 🌔 **Slow** — Conserving fuel, well below pace. 节省燃料，远低于预期消耗。
 - **Deep Space Insights | 深空数据探针**
   Hover to reveal fuel status, refuel times, and warp factor deviations.
   悬浮触发燃料主题数据面板，掌握长周期与短周期限额的每一处细节。
@@ -88,9 +88,36 @@ In the vastness of the code universe, your creative flow shouldn't be pulled dow
 | `refreshIntervalMinutes` | Auto-sync minutes / 雷达刷新间隔 | `5` |
 | `weeklyLowThresholdPercent` | Weekly low quota threshold (%) / 每周低余量告警阈值 | `30` |
 | `fiveHourLowThresholdPercent` | 5-hour low quota threshold (%) / 5小时低余量告警阈值 | `30` |
-| `showPaceIndicator` | Show pace indicator (Warp/Impulse/Moonwalk) / 显示速度指针 | `true` |
-| `paceLabels` | Custom pace labels / 自定义速度状态名称 | `{overload, impulse, moonwalk}` |
-| `paceIcons` | Custom codicon names / 自定义状态图标名称 | `{warning, dashboard, coffee}` |
+| `showPaceIndicator` | Show pace indicator / 显示速度指针 | `true` |
+| `paceTheme` | Pace label theme preset (10 themes) / 主题预设 | `Default` |
+| `paceSensitivity` | Threshold sensitivity (Relaxed/Normal/Strict/Custom) / 灵敏度档位 | `Normal` |
+| `paceThresholdFast` | Fast usage threshold / 用量过快阈值 | *(sensitivity preset)* |
+| `paceThresholdSlow` | Slow usage threshold / 用量过慢阈值 | *(sensitivity preset)* |
+| `paceLabels` | Custom pace labels (fast/normal/slow) / 自定义速度状态名称 | `{}` |
+| `paceIcons` | Custom codicon names / 自定义状态图标名称 | `{}` |
+
+---
+
+### 📋 Changelog | 更新日志
+
+**v0.1.6** — *Theme Engine & Threshold Control*
+- 10 款速度指针主题预设（Default / Animals / Racing / Fish / Birds / Rocket / Running / STAR WARS / STAR TREK / BACK TO THE FUTURE）
+- 4 档灵敏度联动阈值（Relaxed / Normal / Strict / Custom），档位切换自动同步阈值
+- 自定义 Fast / Slow 分界阈值
+- 状态栏用量边界 emoji（满额 🌕 / 耗尽 🌑）
+- QuickPick 增加设置入口
+
+**v0.1.5** — *Refined Telemetry*
+- 品牌统一：Tom → Kimi
+- 增强错误处理与状态栏提示
+
+**v0.1.4** — *Pace Indicator*
+- 实时消耗速率指针（Fast / Normal / Slow）
+- 燃料主题悬浮提示与三格进度条
+- 深空数据面板（QuickPick）
+
+**v0.1.0** — *Liftoff*
+- 状态栏余量监控与自动刷新
 
 ---
 
