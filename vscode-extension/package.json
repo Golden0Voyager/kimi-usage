@@ -136,13 +136,14 @@
           "type": "string",
           "default": "normal",
           "enum": ["relaxed", "normal", "strict"],
-          "description": "Pace threshold sensitivity / 阈值灵敏度档位",
+          "description": "Pace threshold sensitivity. relaxed=1.2/0.8 (hard to switch), normal=1.1/0.9, strict=1.05/0.95 (easy to switch) / 阈值灵敏度档位：relaxed=1.2/0.8（难切换）、normal=1.1/0.9、strict=1.05/0.95（易切换）",
           "order": 11
         },
         "kimiCodeUsage.paceThresholds": {
           "type": "object",
           "default": {},
-          "description": "Advanced: override pace thresholds (warp/moonwalk). Empty fields fall back to sensitivity preset / 高级：覆盖速度分界阈值，留空则回退到灵敏度预设",
+          "description": "Advanced: override pace thresholds. Leave empty to use sensitivity preset. / 高级：覆盖速度分界阈值，留空则使用灵敏度预设。",
+          "markdownDescription": "Advanced: override pace thresholds. Leave empty to use sensitivity preset.\n\n**How it works:**\n- Pace ratio = (used ÷ limit) ÷ (elapsed time ÷ total window)\n- ratio ≥ warp → \"using too fast\"\n- ratio ≤ moonwalk → \"using too slow\"\n- in between → \"normal\"\n\n高级：覆盖速度分界阈值，留空则使用灵敏度预设。\n\n**计算方式：**\n- 速度比率 = (已用量 ÷ 限额) ÷ (已过时间 ÷ 总窗口)\n- 比率 ≥ warp 阈值 → 用得太快\n- 比率 ≤ moonwalk 阈值 → 用得太慢\n- 中间 → 正常",
           "order": 12,
           "properties": {
             "warp": {
